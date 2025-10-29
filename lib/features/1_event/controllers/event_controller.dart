@@ -3,76 +3,137 @@ import '../models/event_model.dart';
 import '../services/event_service.dart';
 import '../../../core/services/location_service.dart';
 
+enum EventListMode { nearby, popular }
+
 class EventController extends ChangeNotifier {
-  
   final EventService _eventService = EventService();
   final LocationService _locationService = LocationService();
 
-  List<EventModel> _events = [];
-  bool _isLoading = true;
+  List<EventModel> _nearbyEvents = [];
+  List<EventModel> _popularEventsUS = [];
+  bool _isLoadingNearby = true;
+  bool _isLoadingPopular = false;
   String _errorMessage = '';
-  // Simpan lokasi awal agar bisa dipakai ulang saat search
-  String? _currentLatLong; 
+  String? _currentLatLong;
+  EventListMode _currentMode = EventListMode.nearby;
+  bool _hasTriedLoadingPopular = false;
+  bool _disposed = false;
 
-  List<EventModel> get events => _events;
-  bool get isLoading => _isLoading;
+  List<EventModel> get eventsToShow =>
+      _currentMode == EventListMode.nearby ? _nearbyEvents : _popularEventsUS;
+  bool get isLoading =>
+      _currentMode == EventListMode.nearby ? _isLoadingNearby : _isLoadingPopular;
   String get errorMessage => _errorMessage;
+  EventListMode get currentMode => _currentMode;
 
   EventController() {
-    loadEvents(); 
+    loadNearbyEvents();
   }
 
-  // Fungsi helper untuk mendapatkan lokasi awal sekali saja
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  void _safeNotifyListeners() {
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
+
   Future<void> _getInitialLocation() async {
-    // Hanya ambil lokasi jika belum ada
     if (_currentLatLong == null) {
       try {
         _currentLatLong = await _locationService.getCurrentLocation();
+        if (_disposed) return;
+        _errorMessage = '';
+        _safeNotifyListeners();
       } catch (e) {
+         if (_disposed) return;
         _errorMessage = e.toString().replaceAll("Exception: ", "");
-        _currentLatLong = null; // Set null jika gagal
+        _currentLatLong = null;
+        _safeNotifyListeners();
       }
     }
   }
 
-  Future<void> loadEvents() async {
-    _isLoading = true;
-    _errorMessage = '';
-    notifyListeners(); 
+  Future<void> loadNearbyEvents({String? keyword}) async {
+    _isLoadingNearby = true;
+    if (keyword == null) _errorMessage = '';
+    _safeNotifyListeners();
 
-    // Panggil helper untuk dapatkan lokasi awal
     await _getInitialLocation();
-    
-    try {
-      // Panggil service dengan lokasi awal (atau null)
-      _events = await _eventService.fetchEvents(latLong: _currentLatLong);
-    } catch (e) {
-      _errorMessage = e.toString().replaceAll("Exception: ", "");
-      _events = []; // Kosongkan list jika error
-    } 
-    
-    _isLoading = false;
-    notifyListeners();
-  }
+    if (_disposed) return;
 
-  // Fungsi baru untuk melakukan pencarian
-  Future<void> searchEvents(String keyword) async {
-    _isLoading = true;
-    _errorMessage = '';
-    notifyListeners();
-
-    try {
-      // Panggil service dengan lokasi yang sama, tapi tambahkan keyword
-      _events = await _eventService.fetchEvents(
-        latLong: _currentLatLong, // Pakai lokasi yang sudah disimpan
-        keyword: keyword, // Tambahkan keyword dari search bar
-      );
-    } catch (e) {
-      _errorMessage = e.toString().replaceAll("Exception: ", "");
-       _events = []; // Kosongkan list jika error
+    if (_currentLatLong == null) {
+        _nearbyEvents = [];
+        _isLoadingNearby = false;
+        _safeNotifyListeners();
+        return;
     }
 
-    _isLoading = false;
-    notifyListeners();
+    try {
+      _nearbyEvents = await _eventService.fetchEvents(
+        latLong: _currentLatLong,
+        keyword: keyword,
+      );
+      if (_disposed) return;
+       if (_errorMessage.contains('lokasi')) _errorMessage = '';
+    } catch (e) {
+      if (_disposed) return;
+      _errorMessage = e.toString().replaceAll("Exception: ", "");
+      _nearbyEvents = [];
+    }
+
+    _isLoadingNearby = false;
+    _safeNotifyListeners();
+  }
+
+  Future<void> loadPopularEventsUS({String? keyword}) async {
+    if (!_hasTriedLoadingPopular || keyword != null) {
+      _isLoadingPopular = true;
+       if (keyword == null) _errorMessage = '';
+      _safeNotifyListeners();
+
+      try {
+        _popularEventsUS = await _eventService.fetchEvents(
+          countryCode: "US",
+          keyword: keyword,
+        );
+         if (_disposed) return;
+         _hasTriedLoadingPopular = true;
+         _errorMessage = '';
+      } catch (e) {
+         if (_disposed) return;
+        _errorMessage = e.toString().replaceAll("Exception: ", "");
+        _popularEventsUS = [];
+      }
+
+      _isLoadingPopular = false;
+      _safeNotifyListeners();
+    }
+  }
+
+  Future<void> searchEvents(String keyword) async {
+    if (_currentMode == EventListMode.nearby) {
+      await loadNearbyEvents(keyword: keyword);
+    } else {
+      await loadPopularEventsUS(keyword: keyword);
+    }
+  }
+
+  void changeMode(EventListMode newMode) {
+    if (_currentMode != newMode) {
+      _currentMode = newMode;
+      if (!(_currentMode == EventListMode.nearby && _errorMessage.contains('lokasi'))) {
+           _errorMessage = '';
+      }
+      if (newMode == EventListMode.popular && !_hasTriedLoadingPopular) {
+        loadPopularEventsUS();
+      } else {
+        _safeNotifyListeners();
+      }
+    }
   }
 }

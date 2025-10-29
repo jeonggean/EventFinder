@@ -52,11 +52,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String isoDateTime =
-        _timezoneHelper.getIsoDateTime(widget.event.localDate, widget.event.localTime);
-    
-    final Map<String, String> convertedTimes =
-        _timezoneHelper.getConvertedTimes(isoDateTime, widget.event.timezone);
+    final String isoDateTime = _timezoneHelper.getIsoDateTime(
+      widget.event.localDate,
+      widget.event.localTime,
+    );
+
+    final Map<String, String> convertedTimes = _timezoneHelper
+        .getConvertedTimes(isoDateTime, widget.event.timezone);
 
     return Scaffold(
       appBar: AppBar(
@@ -110,13 +112,17 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   _buildInfoRow(
                     context,
                     icon: Icons.calendar_today,
-                    text: "${widget.event.localDate} @ ${widget.event.localTime} (${widget.event.timezone})",
+                    text:
+                        "${widget.event.localDate} @ ${widget.event.localTime} (${widget.event.timezone})",
                   ),
                   const SizedBox(height: 12),
                   _buildInfoRow(
                     context,
                     icon: Icons.attach_money,
-                    text: _formatCurrency(widget.event.minPrice, widget.event.currency),
+                    text: _formatCurrency(
+                      widget.event.minPrice,
+                      widget.event.currency,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -127,10 +133,22 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     ),
                   ),
                   const Divider(height: 20),
-                  _buildTimezoneRow("WIB (Jakarta)", convertedTimes['WIB'] ?? 'N/A'),
-                  _buildTimezoneRow("WITA (Makassar)", convertedTimes['WITA'] ?? 'N/A'),
-                  _buildTimezoneRow("WIT (Jayapura)", convertedTimes['WIT'] ?? 'N/A'),
-                  _buildTimezoneRow("London", convertedTimes['London'] ?? 'N/A'),
+                  _buildTimezoneRow(
+                    "WIB (Jakarta)",
+                    convertedTimes['WIB'] ?? 'N/A',
+                  ),
+                  _buildTimezoneRow(
+                    "WITA (Makassar)",
+                    convertedTimes['WITA'] ?? 'N/A',
+                  ),
+                  _buildTimezoneRow(
+                    "WIT (Jayapura)",
+                    convertedTimes['WIT'] ?? 'N/A',
+                  ),
+                  _buildTimezoneRow(
+                    "London",
+                    convertedTimes['London'] ?? 'N/A',
+                  ),
                 ],
               ),
             ),
@@ -140,21 +158,16 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  Widget _buildInfoRow(BuildContext context, {required IconData icon, required String text}) {
+  Widget _buildInfoRow(
+    BuildContext context, {
+    required IconData icon,
+    required String text,
+  }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Theme.of(context).colorScheme.primary,
-        ),
+        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 12),
-        Flexible(
-          child: Text(
-            text,
-            style: const TextStyle(fontSize: 16),
-          ),
-        ),
+        Flexible(child: Text(text, style: const TextStyle(fontSize: 16))),
       ],
     );
   }
@@ -165,16 +178,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            zoneName,
-            style: const TextStyle(fontSize: 16),
-          ),
+          Text(zoneName, style: const TextStyle(fontSize: 16)),
           Text(
             time,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ],
       ),

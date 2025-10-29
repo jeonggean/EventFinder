@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../1_event/screens/event_list_screen.dart';
 import '../3_favorites/screens/favorites_screen.dart';
-import '../4_converter/screens/converter_screen.dart';
 import '../5_profile/screens/profile_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -14,11 +13,11 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
 
+  // Hapus ConverterScreen dari list
   final List<Widget> _screens = [
-    EventListScreen(),
-    const FavoritesScreen(),
-    ConverterScreen(),
-    const ProfileScreen(),
+    EventListScreen(),          // Index 0
+    const FavoritesScreen(),  // Index 1
+    const ProfileScreen(),    // Index 2 (sebelumnya Converter)
   ];
 
   void _onItemTapped(int index) {
@@ -36,6 +35,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         backgroundColor: Theme.of(context).cardTheme.color,
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey[600],
+
+        // Hapus item Converter
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -45,10 +46,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             icon: Icon(Icons.favorite),
             label: 'Favorites',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calculate),
-            label: 'Converter',
-          ),
+
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',

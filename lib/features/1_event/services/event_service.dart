@@ -7,7 +7,9 @@ class EventService {
   final String _baseUrl = "https://app.ticketmaster.com/discovery/v2/events.json";
 
   Future<List<EventModel>> fetchEvents({String? latLong}) async {
-    String url = "$_baseUrl?apikey=$_apiKey";
+    
+    // Ini dia filternya: &segmentName=Music
+    String url = "$_baseUrl?apikey=$_apiKey&segmentName=Music";
 
     if (latLong != null && latLong.isNotEmpty) {
       url += "&latlong=$latLong";
@@ -20,6 +22,12 @@ class EventService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
+        
+        // Cek jika tidak ada data
+        if (data['_embedded'] == null) {
+          return []; 
+        }
+
         final List eventsJsonList = data['_embedded']['events'];
         
         List<EventModel> events = [];

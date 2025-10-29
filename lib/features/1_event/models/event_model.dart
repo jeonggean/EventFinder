@@ -22,9 +22,9 @@ class EventModel {
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
+    
     String getImageUrl(Map<String, dynamic> json) {
       if (json['images'] != null && json['images'].isNotEmpty) {
-        // Ambil gambar dengan rasio 16_9, jika tidak ada, ambil gambar pertama
         final fallbackImage = json['images'][0]['url'];
         final preferredImage = (json['images'] as List).firstWhere(
           (img) => img['ratio'] == '16_9',
@@ -32,7 +32,7 @@ class EventModel {
         );
         return preferredImage?['url'] ?? fallbackImage;
       }
-      return 'https://i.imgur.com/gA1q3nJ.png'; // Gambar placeholder
+      return 'https://i.imgur.com/gA1q3nJ.png'; 
     }
 
     String getCurrency(Map<String, dynamic> json) {
@@ -52,13 +52,27 @@ class EventModel {
     return EventModel(
       id: json['id'] ?? '',
       name: json['name'] ?? 'No Name',
-      imageUrl: getImageUrl(json),
-      localDate: json['dates']?['start']?['localDate'] ?? 'No Date',
-      localTime: json['dates']?['start']?['localTime'] ?? 'No Time',
-      timezone: json['dates']?['timezone'] ?? 'N/A',
-      currency: getCurrency(json),
-      minPrice: getPrice(json, 'min'),
-      maxPrice: getPrice(json, 'max'),
+      imageUrl: json['imageUrl'] ?? getImageUrl(json),
+      localDate: json['localDate'] ?? json['dates']?['start']?['localDate'] ?? 'No Date',
+      localTime: json['localTime'] ?? json['dates']?['start']?['localTime'] ?? 'No Time',
+      timezone: json['timezone'] ?? json['dates']?['timezone'] ?? 'N/A',
+      currency: json['currency'] ?? getCurrency(json),
+      minPrice: json['minPrice'] ?? getPrice(json, 'min'),
+      maxPrice: json['maxPrice'] ?? getPrice(json, 'max'),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'imageUrl': imageUrl,
+      'localDate': localDate,
+      'localTime': localTime,
+      'timezone': timezone,
+      'currency': currency,
+      'minPrice': minPrice,
+      'maxPrice': maxPrice,
+    };
   }
 }

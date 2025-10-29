@@ -1,16 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../../core/utils/timezone_helper.dart'; // <-- IMPORT HELPER
+import '../../../core/utils/timezone_helper.dart';
+import '../../3_favorites/services/favorites_service.dart';
 import '../models/event_model.dart';
 
-class EventDetailScreen extends StatelessWidget {
+class EventDetailScreen extends StatefulWidget {
   final EventModel event;
 
-  // Buat instance dari helper
-  final TimezoneHelper _timezoneHelper = TimezoneHelper();
+  const EventDetailScreen({super.key, required this.event});
 
-  EventDetailScreen({super.key, required this.event});
+  @override
+  State<EventDetailScreen> createState() => _EventDetailScreenState();
+}
+
+class _EventDetailScreenState extends State<EventDetailScreen> {
+  final TimezoneHelper _timezoneHelper = TimezoneHelper();
+  final FavoritesService _favoritesService = FavoritesService();
+
+  late bool _isFavorite;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFavorite = _favoritesService.isFavorite(widget.event);
+  }
 
   String _formatCurrency(double price, String currencyCode) {
     if (price == 0.0 && currencyCode == 'N/A') return "Harga tidak tersedia";
@@ -24,15 +38,25 @@ class EventDetailScreen extends StatelessWidget {
     return format.format(price);
   }
 
+  void _toggleFavorite() {
+    setState(() {
+      if (_isFavorite) {
+        _favoritesService.removeFavorite(widget.event);
+        _isFavorite = false;
+      } else {
+        _favoritesService.addFavorite(widget.event);
+        _isFavorite = true;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final String isoDateTime = _timezoneHelper.getIsoDateTime(
-      event.localDate,
-      event.localTime,
-    );
-
-    final Map<String, String> convertedTimes = _timezoneHelper
-        .getConvertedTimes(isoDateTime, event.timezone);
+    final String isoDateTime =
+        _timezoneHelper.getIsoDateTime(widget.event.localDate, widget.event.localTime);
+    
+    final Map<String, String> convertedTimes =
+        _timezoneHelper.getConvertedTimes(isoDateTime, widget.event.timezone);
 
     return Scaffold(
       appBar: AppBar(
@@ -40,13 +64,22 @@ class EventDetailScreen extends StatelessWidget {
           "Detail Acara",
           style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: _isFavorite ? Colors.red : Colors.white,
+            ),
+            onPressed: _toggleFavorite,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Image.network(
-              event.imageUrl,
+              widget.event.imageUrl,
               height: 250,
               width: double.infinity,
               fit: BoxFit.cover,
@@ -67,7 +100,7 @@ class EventDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    event.name,
+                    widget.event.name,
                     style: GoogleFonts.nunito(
                       fontWeight: FontWeight.bold,
                       fontSize: 24,
@@ -77,18 +110,14 @@ class EventDetailScreen extends StatelessWidget {
                   _buildInfoRow(
                     context,
                     icon: Icons.calendar_today,
-                    // Tampilkan juga timezone asli event-nya
-                    text:
-                        "${event.localDate} @ ${event.localTime} (${event.timezone})",
+                    text: "${widget.event.localDate} @ ${widget.event.localTime} (${widget.event.timezone})",
                   ),
                   const SizedBox(height: 12),
                   _buildInfoRow(
                     context,
                     icon: Icons.attach_money,
-                    text: _formatCurrency(event.minPrice, event.currency),
+                    text: _formatCurrency(widget.event.minPrice, widget.event.currency),
                   ),
-
-                  // --- BAGIAN TAMBAHAN (ZONA WAKTU) ---
                   const SizedBox(height: 24),
                   Text(
                     "Perbandingan Zona Waktu",
@@ -98,22 +127,10 @@ class EventDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const Divider(height: 20),
-                  _buildTimezoneRow(
-                    "WIB (Jakarta)",
-                    convertedTimes['WIB'] ?? 'N/A',
-                  ),
-                  _buildTimezoneRow(
-                    "WITA (Makassar)",
-                    convertedTimes['WITA'] ?? 'N/A',
-                  ),
-                  _buildTimezoneRow(
-                    "WIT (Jayapura)",
-                    convertedTimes['WIT'] ?? 'N/A',
-                  ),
-                  _buildTimezoneRow(
-                    "London",
-                    convertedTimes['London'] ?? 'N/A',
-                  ),
+                  _buildTimezoneRow("WIB (Jakarta)", convertedTimes['WIB'] ?? 'N/A'),
+                  _buildTimezoneRow("WITA (Makassar)", convertedTimes['WITA'] ?? 'N/A'),
+                  _buildTimezoneRow("WIT (Jayapura)", convertedTimes['WIT'] ?? 'N/A'),
+                  _buildTimezoneRow("London", convertedTimes['London'] ?? 'N/A'),
                 ],
               ),
             ),
@@ -123,31 +140,41 @@ class EventDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(
-    BuildContext context, {
-    required IconData icon,
-    required String text,
-  }) {
+  Widget _buildInfoRow(BuildContext context, {required IconData icon, required String text}) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+        Icon(
+          icon,
+          size: 20,
+          color: Theme.of(context).colorScheme.primary,
+        ),
         const SizedBox(width: 12),
-        Flexible(child: Text(text, style: const TextStyle(fontSize: 16))),
+        Flexible(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
       ],
     );
   }
 
-  // Widget baru untuk menampilkan perbandingan waktu
   Widget _buildTimezoneRow(String zoneName, String time) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(zoneName, style: const TextStyle(fontSize: 16)),
+          Text(
+            zoneName,
+            style: const TextStyle(fontSize: 16),
+          ),
           Text(
             time,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),

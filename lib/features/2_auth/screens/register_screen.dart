@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../0_navigation/main_navigation_screen.dart';
 import '../controllers/auth_controller.dart';
-import 'register_screen.dart'; 
+import 'login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  final String? initialMessage;
-  
-  LoginScreen({super.key, this.initialMessage});
+class RegisterScreen extends StatefulWidget {
+  RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   late final AuthController _controller;
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -22,15 +19,9 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _controller = AuthController();
-    if (widget.initialMessage != null) {
-      _controller.errorMessage = widget.initialMessage!;
-    }
-
     _controller.addListener(() {
-      if (!mounted) return;
       setState(() {});
     });
-   
   }
 
   @override
@@ -41,15 +32,19 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _login() async {
-    bool success = await _controller.login(
+  Future<void> _register() async {
+    bool success = await _controller.register(
       _usernameController.text,
       _passwordController.text,
     );
     if (success && mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => MainNavigationScreen()),
+        MaterialPageRoute(
+          builder: (context) => LoginScreen(
+            initialMessage: _controller.errorMessage,
+          ),
+        ),
       );
     }
   }
@@ -57,6 +52,14 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          "Buat Akun Baru",
+          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -65,14 +68,8 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(
-                  Icons.music_note,
-                  size: 80,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
                 Text(
-                  'EventFinder',
+                  'Selamat Datang!',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.nunito(
                     fontSize: 32,
@@ -81,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Temukan konsermu selanjutnya',
+                  'Isi data untuk mendaftar',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.nunito(
                     fontSize: 16,
@@ -116,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Center(child: CircularProgressIndicator())
                 else
                   ElevatedButton(
-                    onPressed: _login,
+                    onPressed: _register,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -124,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     child: Text(
-                      'Login',
+                      'Register',
                       style: GoogleFonts.nunito(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -135,13 +132,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (!_controller.isLoading)
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => RegisterScreen()),
-                      );
+                      Navigator.pop(context);
                     },
                     child: Text(
-                      'Belum punya akun? Register',
+                      'Sudah punya akun? Login',
                       style: GoogleFonts.nunito(
                         color: Theme.of(context).colorScheme.primary,
                       ),
@@ -154,9 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       _controller.errorMessage,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: _controller.errorMessage.contains("berhasil")
-                            ? Colors.green
-                            : Colors.red,
+                        color: Colors.red,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

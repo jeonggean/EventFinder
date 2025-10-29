@@ -15,10 +15,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
-    EventListScreen(), // Tab 0: Home (List Event)
-    const FavoritesScreen(),  // Tab 1: Favorites
-    const ConverterScreen(),  // Tab 2: Converter
-    const ProfileScreen(),    // Tab 3: Profile
+    EventListScreen(),
+    const FavoritesScreen(),
+    ConverterScreen(),
+    const ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -30,18 +30,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Body akan menampilkan screen yang sedang aktif
       body: _screens[_selectedIndex],
-      
-      // Definisikan Bottom Navigation Bar
       bottomNavigationBar: BottomNavigationBar(
-        // --- Ini penting untuk tema gelap agar rapi ---
-        type: BottomNavigationBarType.fixed, // Agar 4 item muat
-        backgroundColor: Theme.of(context).cardTheme.color, // Warna dari tema
-        selectedItemColor: Theme.of(context).colorScheme.primary, // Warna Aksen
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Theme.of(context).cardTheme.color,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey[600],
-        // ------------------------------------------
-
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.home),

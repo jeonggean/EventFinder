@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; 
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../controllers/event_controller.dart';
 import '../models/event_model.dart';
+import 'event_detail_screen.dart';
 
 class EventListScreen extends StatefulWidget {
   EventListScreen({super.key});
@@ -31,10 +33,10 @@ class _EventListScreenState extends State<EventListScreen> {
   String _formatCurrency(double price, String currencyCode) {
     if (price == 0.0 && currencyCode == 'N/A') return "Harga tidak tersedia";
     if (price == 0.0) return "Gratis";
-    
+
     final format = NumberFormat.currency(
-      locale: 'en_US', 
-      symbol: "$currencyCode ", 
+      locale: 'en_US',
+      symbol: "$currencyCode ",
       decimalDigits: 2,
     );
     return format.format(price);
@@ -59,7 +61,7 @@ class _EventListScreenState extends State<EventListScreen> {
     }
 
     if (_controller.events.isEmpty) {
-       return const Center(
+      return const Center(
         child: Text(
           'Tidak ada acara ditemukan di sekitarmu.',
           textAlign: TextAlign.center,
@@ -74,16 +76,14 @@ class _EventListScreenState extends State<EventListScreen> {
 
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          elevation: 4,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
           child: InkWell(
             onTap: () {
-              print("Kamu mengklik event: ${event.name}");
-              print("Zona Waktunya: ${event.timezone}");
-              print("Harganya: ${event.currency} ${event.minPrice}");
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EventDetailScreen(event: event),
+                ),
+              );
             },
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,7 +104,6 @@ class _EventListScreenState extends State<EventListScreen> {
                     ),
                   ),
                 ),
-                
                 Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Column(
@@ -120,10 +119,11 @@ class _EventListScreenState extends State<EventListScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
-                      
                       Row(
                         children: [
-                          const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                          Icon(Icons.calendar_today,
+                              size: 14,
+                              color: Theme.of(context).iconTheme.color),
                           const SizedBox(width: 6),
                           Text(
                             "${event.localDate} @ ${event.localTime}",
@@ -133,10 +133,11 @@ class _EventListScreenState extends State<EventListScreen> {
                         ],
                       ),
                       const SizedBox(height: 4),
-
                       Row(
                         children: [
-                          const Icon(Icons.attach_money, size: 14, color: Colors.grey),
+                          Icon(Icons.attach_money,
+                              size: 14,
+                              color: Theme.of(context).iconTheme.color),
                           const SizedBox(width: 6),
                           Text(
                             _formatCurrency(event.minPrice, event.currency),
@@ -160,7 +161,10 @@ class _EventListScreenState extends State<EventListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Acara di Sekitarmu'),
+        title: Text(
+          'EventFinder',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+        ),
       ),
       body: _buildBody(),
     );

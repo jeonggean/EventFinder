@@ -6,9 +6,8 @@ class EventService {
   final String _apiKey = "SYZLziH8NliWAS0sfXMnprtbFzTtNGsR";
   final String _baseUrl = "https://app.ticketmaster.com/discovery/v2/events.json";
 
-  Future<List<EventModel>> fetchEvents({String? latLong}) async {
+  Future<List<EventModel>> fetchEvents({String? latLong, String? keyword}) async {
     
-    // Ini dia filternya: &segmentName=Music
     String url = "$_baseUrl?apikey=$_apiKey&segmentName=Music";
 
     if (latLong != null && latLong.isNotEmpty) {
@@ -17,13 +16,16 @@ class EventService {
       url += "&countryCode=US";
     }
 
+    if (keyword != null && keyword.isNotEmpty) {
+      url += "&keyword=$keyword";
+    }
+
     try {
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
         
-        // Cek jika tidak ada data
         if (data['_embedded'] == null) {
           return []; 
         }

@@ -22,8 +22,11 @@ class EventModel {
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
-    
+
     String getImageUrl(Map<String, dynamic> json) {
+      if (json.containsKey('imageUrl')) {
+        return json['imageUrl'] ?? 'https://i.imgur.com/gA1q3nJ.png';
+      }
       if (json['images'] != null && json['images'].isNotEmpty) {
         final fallbackImage = json['images'][0]['url'];
         final preferredImage = (json['images'] as List).firstWhere(
@@ -32,10 +35,13 @@ class EventModel {
         );
         return preferredImage?['url'] ?? fallbackImage;
       }
-      return 'https://i.imgur.com/gA1q3nJ.png'; 
+      return 'https://i.imgur.com/gA1q3nJ.png';
     }
 
     String getCurrency(Map<String, dynamic> json) {
+       if (json.containsKey('currency')) {
+         return json['currency'] ?? 'N/A';
+       }
       if (json['priceRanges'] != null && json['priceRanges'].isNotEmpty) {
         return json['priceRanges'][0]['currency'] ?? 'N/A';
       }
@@ -43,22 +49,47 @@ class EventModel {
     }
 
     double getPrice(Map<String, dynamic> json, String key) {
+      if (json.containsKey(key)) {
+         return (json[key] as num?)?.toDouble() ?? 0.0;
+      }
       if (json['priceRanges'] != null && json['priceRanges'].isNotEmpty) {
         return (json['priceRanges'][0][key] as num?)?.toDouble() ?? 0.0;
       }
       return 0.0;
     }
 
+     String getDate(Map<String, dynamic> json) {
+       if (json.containsKey('localDate')) {
+         return json['localDate'] ?? 'No Date';
+       }
+       return json['dates']?['start']?['localDate'] ?? 'No Date';
+     }
+
+     String getTime(Map<String, dynamic> json) {
+        if (json.containsKey('localTime')) {
+         return json['localTime'] ?? 'No Time';
+       }
+       return json['dates']?['start']?['localTime'] ?? 'No Time';
+     }
+
+     String getTimezone(Map<String, dynamic> json) {
+       if (json.containsKey('timezone')) {
+         return json['timezone'] ?? 'N/A';
+       }
+       return json['dates']?['timezone'] ?? 'N/A';
+     }
+
+
     return EventModel(
       id: json['id'] ?? '',
       name: json['name'] ?? 'No Name',
-      imageUrl: json['imageUrl'] ?? getImageUrl(json),
-      localDate: json['localDate'] ?? json['dates']?['start']?['localDate'] ?? 'No Date',
-      localTime: json['localTime'] ?? json['dates']?['start']?['localTime'] ?? 'No Time',
-      timezone: json['timezone'] ?? json['dates']?['timezone'] ?? 'N/A',
-      currency: json['currency'] ?? getCurrency(json),
-      minPrice: json['minPrice'] ?? getPrice(json, 'min'),
-      maxPrice: json['maxPrice'] ?? getPrice(json, 'max'),
+      imageUrl: getImageUrl(json),
+      localDate: getDate(json),
+      localTime: getTime(json),
+      timezone: getTimezone(json),
+      currency: getCurrency(json),
+      minPrice: getPrice(json, 'minPrice'), 
+      maxPrice: getPrice(json, 'maxPrice'),
     );
   }
 

@@ -14,6 +14,7 @@ class EventListScreen extends StatefulWidget {
 
 class _EventListScreenState extends State<EventListScreen> {
   late final EventController _controller;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -27,6 +28,7 @@ class _EventListScreenState extends State<EventListScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -63,7 +65,7 @@ class _EventListScreenState extends State<EventListScreen> {
     if (_controller.events.isEmpty) {
       return const Center(
         child: Text(
-          'Tidak ada acara ditemukan di sekitarmu.',
+          'Tidak ada acara ditemukan.',
           textAlign: TextAlign.center,
         ),
       );
@@ -162,11 +164,31 @@ class _EventListScreenState extends State<EventListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'EventFinder',
+          'Cari Konser',
           style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
         ),
       ),
-      body: _buildBody(),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Cari berdasarkan nama artis atau acara...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onSubmitted: (String keyword) {
+                _controller.searchEvents(keyword);
+              },
+            ),
+          ),
+          Expanded(child: _buildBody()),
+        ],
+      ),
     );
   }
 }

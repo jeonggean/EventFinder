@@ -12,9 +12,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized(); 
 
   final appDocumentDir = await getApplicationDocumentsDirectory();
-  
   await Hive.initFlutter(appDocumentDir.path); 
-  
   await Hive.openBox('session');
   await Hive.openBox('users');
   await Hive.openBox('favorites'); 

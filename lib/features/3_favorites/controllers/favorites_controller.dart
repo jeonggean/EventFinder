@@ -14,7 +14,7 @@ class FavoritesController extends ChangeNotifier {
   void loadFavorites() {
     _isLoading = true;
     notifyListeners();
-    
+
     try {
       _favorites = _service.getFavorites();
     } catch (e) {

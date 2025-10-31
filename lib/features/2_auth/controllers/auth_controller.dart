@@ -14,6 +14,7 @@ class AuthController extends ChangeNotifier {
     _errorMessage = message;
     notifyListeners();
   }
+
   bool get isLoggedIn => _service.isLoggedIn();
 
   Future<bool> login(String username, String password) async {

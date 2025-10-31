@@ -3,7 +3,6 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:intl/intl.dart';
 
 class TimezoneHelper {
-  
   TimezoneHelper() {
     tz.initializeTimeZones();
   }
@@ -18,11 +17,17 @@ class TimezoneHelper {
     }
   }
 
-  Map<String, String> getConvertedTimes(String isoDateTime, String eventTimezone) {
+  Map<String, String> getConvertedTimes(
+    String isoDateTime,
+    String eventTimezone,
+  ) {
     tz.TZDateTime eventTime;
     try {
       final eventLocation = tz.getLocation(eventTimezone);
-      eventTime = tz.TZDateTime.from(DateTime.parse(isoDateTime), eventLocation);
+      eventTime = tz.TZDateTime.from(
+        DateTime.parse(isoDateTime),
+        eventLocation,
+      );
     } catch (e) {
       eventTime = tz.TZDateTime.now(tz.local);
     }

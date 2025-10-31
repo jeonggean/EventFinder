@@ -28,14 +28,14 @@ class ConverterController extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = '';
     notifyListeners();
-    
+
     try {
       _rates = await _service.getRates();
       calculate();
     } catch (e) {
       _errorMessage = e.toString().replaceAll("Exception: ", "");
     }
-    
+
     _isLoading = false;
     notifyListeners();
   }
@@ -68,10 +68,10 @@ class ConverterController extends ChangeNotifier {
 
   void calculate() {
     if (_rates.isEmpty) return;
-    
+
     double fromRate = (_rates[_fromCurrency] as num).toDouble();
     double toRate = (_rates[_toCurrency] as num).toDouble();
-    
+
     _result = (_amount / fromRate) * toRate;
     notifyListeners();
   }

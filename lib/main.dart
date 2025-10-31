@@ -7,14 +7,14 @@ import 'features/2_auth/services/auth_service.dart';
 import 'features/2_auth/screens/login_screen.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); 
+  WidgetsFlutterBinding.ensureInitialized();
 
   final appDocumentDir = await getApplicationDocumentsDirectory();
-  await Hive.initFlutter(appDocumentDir.path); 
+  await Hive.initFlutter(appDocumentDir.path);
   await Hive.openBox('session');
   await Hive.openBox('users');
-  await Hive.openBox('favorites'); 
-  
+  await Hive.openBox('favorites');
+
   runApp(const MyApp());
 }
 
@@ -23,64 +23,61 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
-    final Color primaryColor = Color(0xFF9575CD); 
-    final Color backgroundColor = Color(0xFFF9F9F9); 
-    final Color cardColor = Color(0xFFFFFFFF); 
-    final Color primaryTextColor = Color(0xFF333333); 
-    final Color secondaryTextColor = Color(0xFF828282); 
+    final Color primaryColor = Color(0xFF9575CD);
+    final Color backgroundColor = Color(0xFFF9F9F9);
+    final Color cardColor = Color(0xFFFFFFFF);
+    final Color primaryTextColor = Color(0xFF333333);
+    final Color secondaryTextColor = Color(0xFF828282);
 
     return MaterialApp(
       title: 'Event Finder (MVC)',
-      debugShowCheckedModeBanner: false, 
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.light, 
-        primaryColor: primaryColor, 
-        scaffoldBackgroundColor: backgroundColor, 
-        
+        brightness: Brightness.light,
+        primaryColor: primaryColor,
+        scaffoldBackgroundColor: backgroundColor,
+
         fontFamily: GoogleFonts.nunito().fontFamily,
 
         appBarTheme: AppBarTheme(
-          backgroundColor: primaryColor, 
-          elevation: 1, 
-          foregroundColor: Colors.white, 
+          backgroundColor: primaryColor,
+          elevation: 1,
+          foregroundColor: Colors.white,
           titleTextStyle: GoogleFonts.nunito(
-            color: Colors.white, 
-            fontSize: 22, 
-            fontWeight: FontWeight.bold
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        
-        cardTheme: CardThemeData( 
+
+        cardTheme: CardThemeData(
           clipBehavior: Clip.antiAlias,
-          color: cardColor, 
-          elevation: 2, 
-          shadowColor: Colors.grey.withOpacity(0.2), 
+          color: cardColor,
+          elevation: 2,
+          shadowColor: Colors.grey.withOpacity(0.2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        
+
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: primaryColor, 
-            foregroundColor: Colors.white, 
+            backgroundColor: primaryColor,
+            foregroundColor: Colors.white,
           ),
         ),
-        iconTheme: IconThemeData(
-          color: secondaryTextColor, 
-        ),
+        iconTheme: IconThemeData(color: secondaryTextColor),
         colorScheme: ColorScheme.light(
-          primary: primaryColor,        
-          background: backgroundColor,  
-          surface: cardColor,         
-          onPrimary: Colors.white,      
-          onBackground: primaryTextColor,   
-          onSurface: primaryTextColor,      
-          secondary: primaryColor,      
+          primary: primaryColor,
+          background: backgroundColor,
+          surface: cardColor,
+          onPrimary: Colors.white,
+          onBackground: primaryTextColor,
+          onSurface: primaryTextColor,
+          secondary: primaryColor,
         ),
       ),
-      home: SplashScreen(), 
+      home: SplashScreen(),
     );
   }
 }
@@ -121,10 +118,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

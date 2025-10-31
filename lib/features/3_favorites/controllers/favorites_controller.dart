@@ -16,8 +16,14 @@ class FavoritesController extends ChangeNotifier {
     notifyListeners();
 
     try {
+      print('DEBUG CONTROLLER: Loading favorites...');
       _favorites = _service.getFavorites();
+      print('DEBUG CONTROLLER: Loaded ${_favorites.length} favorites');
+      for (var fav in _favorites) {
+        print('DEBUG CONTROLLER: - ${fav.name}');
+      }
     } catch (e) {
+      print('DEBUG CONTROLLER: Error loading favorites: $e');
       _favorites = [];
     }
 

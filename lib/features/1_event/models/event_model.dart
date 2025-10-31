@@ -1,3 +1,5 @@
+import 'dart:math';
+
 class EventModel {
   final String id;
   final String name;
@@ -22,7 +24,6 @@ class EventModel {
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
-
     String getImageUrl(Map<String, dynamic> json) {
       if (json.containsKey('imageUrl')) {
         return json['imageUrl'] ?? 'https://i.imgur.com/gA1q3nJ.png';
@@ -38,58 +39,67 @@ class EventModel {
       return 'https://i.imgur.com/gA1q3nJ.png';
     }
 
-    String getCurrency(Map<String, dynamic> json) {
-       if (json.containsKey('currency')) {
-         return json['currency'] ?? 'N/A';
-       }
-      if (json['priceRanges'] != null && json['priceRanges'].isNotEmpty) {
-        return json['priceRanges'][0]['currency'] ?? 'N/A';
+    // Deterministic hash function untuk generate random seed dari event ID
+    int _hashString(String str) {
+      int hash = 5381;
+      for (int i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash) + str.codeUnitAt(i);
       }
-      return 'N/A';
+      return hash.abs();
     }
 
-    double getPrice(Map<String, dynamic> json, String key) {
-      if (json.containsKey(key)) {
-         return (json[key] as num?)?.toDouble() ?? 0.0;
-      }
-      if (json['priceRanges'] != null && json['priceRanges'].isNotEmpty) {
-        return (json['priceRanges'][0][key] as num?)?.toDouble() ?? 0.0;
-      }
-      return 0.0;
+    // Get currency, minPrice, maxPrice with fallback to deterministic pseudo-random
+    final String eventId = json['id'] ?? '';
+    String currency;
+    double minPrice;
+    double maxPrice;
+
+    // Check if priceRanges exists
+    if (json['priceRanges'] != null && json['priceRanges'].isNotEmpty) {
+      final priceRange = json['priceRanges'][0];
+      currency = priceRange['currency'] ?? 'USD';
+      minPrice = (priceRange['min'] as num?)?.toDouble() ?? 0.0;
+      maxPrice = (priceRange['max'] as num?)?.toDouble() ?? 0.0;
+    } else if (json.containsKey('currency') &&
+        json.containsKey('minPrice') &&
+        json.containsKey('maxPrice')) {
+      // If already persisted (from Hive)
+      currency = json['currency'] ?? 'USD';
+      minPrice = (json['minPrice'] as num?)?.toDouble() ?? 0.0;
+      maxPrice = (json['maxPrice'] as num?)?.toDouble() ?? 0.0;
+    } else {
+      // Generate deterministic pseudo-random price based on event ID
+      currency = 'USD';
+      final seed = _hashString(eventId);
+      final random = Random(seed);
+
+      // Generate min price between $15 - $50
+      minPrice = 15.0 + (random.nextDouble() * 35.0);
+
+      // Generate max price between minPrice + $20 and minPrice + $80
+      maxPrice = minPrice + 20.0 + (random.nextDouble() * 60.0);
+
+      // Round to 2 decimal places
+      minPrice = double.parse(minPrice.toStringAsFixed(2));
+      maxPrice = double.parse(maxPrice.toStringAsFixed(2));
     }
-
-     String getDate(Map<String, dynamic> json) {
-       if (json.containsKey('localDate')) {
-         return json['localDate'] ?? 'No Date';
-       }
-       return json['dates']?['start']?['localDate'] ?? 'No Date';
-     }
-
-     String getTime(Map<String, dynamic> json) {
-        if (json.containsKey('localTime')) {
-         return json['localTime'] ?? 'No Time';
-       }
-       return json['dates']?['start']?['localTime'] ?? 'No Time';
-     }
-
-     String getTimezone(Map<String, dynamic> json) {
-       if (json.containsKey('timezone')) {
-         return json['timezone'] ?? 'N/A';
-       }
-       return json['dates']?['timezone'] ?? 'N/A';
-     }
-
 
     return EventModel(
-      id: json['id'] ?? '',
+      id: eventId,
       name: json['name'] ?? 'No Name',
-      imageUrl: getImageUrl(json),
-      localDate: getDate(json),
-      localTime: getTime(json),
-      timezone: getTimezone(json),
-      currency: getCurrency(json),
-      minPrice: getPrice(json, 'minPrice'), 
-      maxPrice: getPrice(json, 'maxPrice'),
+      imageUrl: json['imageUrl'] ?? getImageUrl(json),
+      localDate:
+          json['localDate'] ??
+          json['dates']?['start']?['localDate'] ??
+          'No Date',
+      localTime:
+          json['localTime'] ??
+          json['dates']?['start']?['localTime'] ??
+          'No Time',
+      timezone: json['timezone'] ?? json['dates']?['timezone'] ?? 'N/A',
+      currency: currency,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
     );
   }
 

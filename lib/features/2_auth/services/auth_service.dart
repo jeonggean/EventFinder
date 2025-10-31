@@ -13,7 +13,7 @@ class AuthService {
     if (username.isEmpty || password.isEmpty) {
       throw Exception("Username dan password tidak boleh kosong");
     }
-    
+
     if (_usersBox.containsKey(username)) {
       throw Exception("Username sudah terpakai");
     }

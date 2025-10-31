@@ -21,8 +21,9 @@ class EventController extends ChangeNotifier {
 
   List<EventModel> get eventsToShow =>
       _currentMode == EventListMode.nearby ? _nearbyEvents : _popularEventsUS;
-  bool get isLoading =>
-      _currentMode == EventListMode.nearby ? _isLoadingNearby : _isLoadingPopular;
+  bool get isLoading => _currentMode == EventListMode.nearby
+      ? _isLoadingNearby
+      : _isLoadingPopular;
   String get errorMessage => _errorMessage;
   EventListMode get currentMode => _currentMode;
 
@@ -50,7 +51,7 @@ class EventController extends ChangeNotifier {
         _errorMessage = '';
         _safeNotifyListeners();
       } catch (e) {
-         if (_disposed) return;
+        if (_disposed) return;
         _errorMessage = e.toString().replaceAll("Exception: ", "");
         _currentLatLong = null;
         _safeNotifyListeners();
@@ -67,10 +68,10 @@ class EventController extends ChangeNotifier {
     if (_disposed) return;
 
     if (_currentLatLong == null) {
-        _nearbyEvents = [];
-        _isLoadingNearby = false;
-        _safeNotifyListeners();
-        return;
+      _nearbyEvents = [];
+      _isLoadingNearby = false;
+      _safeNotifyListeners();
+      return;
     }
 
     try {
@@ -79,7 +80,7 @@ class EventController extends ChangeNotifier {
         keyword: keyword,
       );
       if (_disposed) return;
-       if (_errorMessage.contains('lokasi')) _errorMessage = '';
+      if (_errorMessage.contains('lokasi')) _errorMessage = '';
     } catch (e) {
       if (_disposed) return;
       _errorMessage = e.toString().replaceAll("Exception: ", "");
@@ -93,7 +94,7 @@ class EventController extends ChangeNotifier {
   Future<void> loadPopularEventsUS({String? keyword}) async {
     if (!_hasTriedLoadingPopular || keyword != null) {
       _isLoadingPopular = true;
-       if (keyword == null) _errorMessage = '';
+      if (keyword == null) _errorMessage = '';
       _safeNotifyListeners();
 
       try {
@@ -101,11 +102,11 @@ class EventController extends ChangeNotifier {
           countryCode: "US",
           keyword: keyword,
         );
-         if (_disposed) return;
-         _hasTriedLoadingPopular = true;
-         _errorMessage = '';
+        if (_disposed) return;
+        _hasTriedLoadingPopular = true;
+        _errorMessage = '';
       } catch (e) {
-         if (_disposed) return;
+        if (_disposed) return;
         _errorMessage = e.toString().replaceAll("Exception: ", "");
         _popularEventsUS = [];
       }
@@ -126,8 +127,9 @@ class EventController extends ChangeNotifier {
   void changeMode(EventListMode newMode) {
     if (_currentMode != newMode) {
       _currentMode = newMode;
-      if (!(_currentMode == EventListMode.nearby && _errorMessage.contains('lokasi'))) {
-           _errorMessage = '';
+      if (!(_currentMode == EventListMode.nearby &&
+          _errorMessage.contains('lokasi'))) {
+        _errorMessage = '';
       }
       if (newMode == EventListMode.popular && !_hasTriedLoadingPopular) {
         loadPopularEventsUS();

@@ -12,7 +12,9 @@ class ConverterScreen extends StatefulWidget {
 
 class _ConverterScreenState extends State<ConverterScreen> {
   late final ConverterController _controller;
-  final TextEditingController _amountController = TextEditingController(text: "1.0");
+  final TextEditingController _amountController = TextEditingController(
+    text: "1.0",
+  );
 
   @override
   void initState() {
@@ -22,7 +24,7 @@ class _ConverterScreenState extends State<ConverterScreen> {
   }
 
   @override
-    void dispose() {
+  void dispose() {
     _controller.removeListener(_updateUI);
     _controller.dispose();
     _amountController.dispose();
@@ -45,8 +47,8 @@ class _ConverterScreenState extends State<ConverterScreen> {
       body: _controller.isLoading
           ? const Center(child: CircularProgressIndicator())
           : _controller.errorMessage.isNotEmpty
-              ? Center(child: Text(_controller.errorMessage))
-              : _buildConverterUI(),
+          ? Center(child: Text(_controller.errorMessage))
+          : _buildConverterUI(),
     );
   }
 
@@ -103,7 +105,12 @@ class _ConverterScreenState extends State<ConverterScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(child: _buildCurrencyDropdown(_controller.fromCurrency, _controller.setFromCurrency)),
+        Expanded(
+          child: _buildCurrencyDropdown(
+            _controller.fromCurrency,
+            _controller.setFromCurrency,
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
           child: IconButton(
@@ -113,7 +120,12 @@ class _ConverterScreenState extends State<ConverterScreen> {
             onPressed: _controller.swapCurrencies,
           ),
         ),
-        Expanded(child: _buildCurrencyDropdown(_controller.toCurrency, _controller.setToCurrency)),
+        Expanded(
+          child: _buildCurrencyDropdown(
+            _controller.toCurrency,
+            _controller.setToCurrency,
+          ),
+        ),
       ],
     );
   }
@@ -123,15 +135,10 @@ class _ConverterScreenState extends State<ConverterScreen> {
       value: value,
       isExpanded: true,
       decoration: InputDecoration(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       items: _controller.currencies.map((String currency) {
-        return DropdownMenuItem<String>(
-          value: currency,
-          child: Text(currency),
-        );
+        return DropdownMenuItem<String>(value: currency, child: Text(currency));
       }).toList(),
       onChanged: (String? newValue) {
         if (newValue != null) {

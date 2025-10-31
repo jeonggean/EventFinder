@@ -13,23 +13,32 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
 
-  // Hapus ConverterScreen dari list
-  final List<Widget> _screens = [
-    EventListScreen(),          // Index 0
-    const FavoritesScreen(),  // Index 1
-    const ProfileScreen(),    // Index 2 (sebelumnya Converter)
-  ];
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
+  Widget _getCurrentScreen() {
+    switch (_selectedIndex) {
+      case 0:
+        return EventListScreen();
+      case 1:
+        // Force rebuild FavoritesScreen setiap kali tab dipilih dengan timestamp key
+        return FavoritesScreen(
+          key: ValueKey('favorites_${DateTime.now().millisecondsSinceEpoch}'),
+        );
+      case 2:
+        return const ProfileScreen();
+      default:
+        return EventListScreen();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: _getCurrentScreen(),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: Theme.of(context).cardTheme.color,
@@ -38,19 +47,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
         // Hapus item Converter
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite),
             label: 'Favorites',
           ),
 
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

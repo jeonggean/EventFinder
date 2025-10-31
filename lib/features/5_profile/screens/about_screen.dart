@@ -41,8 +41,14 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _buildFeatureItem(Icons.search, 'Pencarian Event Konser'),
-            _buildFeatureItem(Icons.location_on, 'Pencarian Berbasis Lokasi (LBS)'),
-            _buildFeatureItem(Icons.favorite, 'Simpan Event Favorit (Database Hive)'),
+            _buildFeatureItem(
+              Icons.location_on,
+              'Pencarian Berbasis Lokasi (LBS)',
+            ),
+            _buildFeatureItem(
+              Icons.favorite,
+              'Simpan Event Favorit (Database Hive)',
+            ),
             _buildFeatureItem(Icons.calculate, 'Konverter Mata Uang'),
             _buildFeatureItem(Icons.access_time, 'Perbandingan Zona Waktu'),
             _buildFeatureItem(Icons.login, 'Autentikasi User (Login/Register)'),
@@ -58,7 +64,10 @@ class AboutScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               '(Tulis kesan dan pesanmu selama mengerjakan project ini di sini...)',
-              style: GoogleFonts.nunito(fontSize: 16, fontStyle: FontStyle.italic),
+              style: GoogleFonts.nunito(
+                fontSize: 16,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ],
         ),

@@ -20,7 +20,7 @@ class LocationService {
     }
 
     Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high
+      desiredAccuracy: LocationAccuracy.high,
     );
 
     return "${position.latitude},${position.longitude}";

@@ -21,7 +21,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     _controller.addListener(() {
       setState(() {});
     });
-    
+
     _controller.loadFavorites();
   }
 

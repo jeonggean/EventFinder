@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../core/services/currency_service.dart';
 import '../../../core/utils/timezone_helper.dart';
 import '../../3_favorites/services/favorites_service.dart';
 import '../models/event_model.dart';
@@ -17,37 +18,142 @@ class EventDetailScreen extends StatefulWidget {
 class _EventDetailScreenState extends State<EventDetailScreen> {
   final TimezoneHelper _timezoneHelper = TimezoneHelper();
   final FavoritesService _favoritesService = FavoritesService();
+  final CurrencyService _currencyService = CurrencyService();
 
   late bool _isFavorite;
+  bool _isConverting = false;
+  String? _convertedPriceText;
 
   @override
   void initState() {
     super.initState();
     _isFavorite = _favoritesService.isFavorite(widget.event);
-  }
-
-  String _formatCurrency(double price, String currencyCode) {
-    if (price == 0.0 && currencyCode == 'N/A') return "Harga tidak tersedia";
-    if (price == 0.0) return "Gratis";
-
-    final format = NumberFormat.currency(
-      locale: 'en_US',
-      symbol: "$currencyCode ",
-      decimalDigits: 2,
+    print(
+      'DEBUG DETAIL: initState - isFavorite: $_isFavorite for event: ${widget.event.name}',
     );
-    return format.format(price);
   }
 
-  void _toggleFavorite() {
+  Future<void> _showConvertedPrice() async {
     setState(() {
-      if (_isFavorite) {
-        _favoritesService.removeFavorite(widget.event);
-        _isFavorite = false;
-      } else {
-        _favoritesService.addFavorite(widget.event);
-        _isFavorite = true;
-      }
+      _isConverting = true;
     });
+
+    try {
+      final rates = await _currencyService.getRates();
+      final from = widget.event.currency;
+      const to = 'IDR';
+
+      if (!rates.containsKey(from) || !rates.containsKey(to)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal konversi: kurs tidak tersedia')),
+        );
+        return;
+      }
+
+      final double fromRate = (rates[from] as num).toDouble();
+      final double toRate = (rates[to] as num).toDouble();
+
+      double convert(double amount) {
+        if (amount <= 0) return 0.0;
+        return (amount / fromRate) * toRate;
+      }
+
+      final convertedMin = convert(widget.event.minPrice);
+      final convertedMax = convert(widget.event.maxPrice);
+
+      final idrFormat = NumberFormat.currency(
+        locale: 'id_ID',
+        symbol: 'IDR ',
+        decimalDigits: 2,
+      );
+
+      String message;
+      if (convertedMin > 0 &&
+          convertedMax > 0 &&
+          convertedMax != convertedMin) {
+        message =
+            '${idrFormat.format(convertedMin)} - ${idrFormat.format(convertedMax)}';
+      } else if (convertedMin > 0) {
+        message = idrFormat.format(convertedMin);
+      } else {
+        message = 'Harga tidak tersedia';
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _convertedPriceText = message;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal konversi: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isConverting = false;
+        });
+      }
+    }
+  }
+
+  String _formatPriceRange(
+    double minPrice,
+    double maxPrice,
+    String currencyCode,
+  ) {
+    if (minPrice == 0.0 && maxPrice == 0.0) {
+      return "Harga tidak tersedia";
+    }
+
+    String symbol = currencyCode != 'N/A' ? '$currencyCode ' : '';
+
+    if (maxPrice > 0 && maxPrice != minPrice && minPrice > 0) {
+      final minStr = NumberFormat.currency(
+        locale: 'en_US',
+        symbol: symbol,
+        decimalDigits: 2,
+      ).format(minPrice);
+      final maxStr = NumberFormat.currency(
+        locale: 'en_US',
+        symbol: symbol,
+        decimalDigits: 2,
+      ).format(maxPrice);
+      return "$minStr - $maxStr";
+    }
+
+    final price = minPrice > 0 ? minPrice : maxPrice;
+    return NumberFormat.currency(
+      locale: 'en_US',
+      symbol: symbol,
+      decimalDigits: 2,
+    ).format(price);
+  }
+
+  void _toggleFavorite() async {
+    try {
+      if (_isFavorite) {
+        await _favoritesService.removeFavorite(widget.event);
+        setState(() {
+          _isFavorite = false;
+        });
+        print('DEBUG DETAIL: Removed from favorites');
+      } else {
+        await _favoritesService.addFavorite(widget.event);
+        setState(() {
+          _isFavorite = true;
+        });
+        print('DEBUG DETAIL: Added to favorites');
+      }
+    } catch (e) {
+      print('DEBUG DETAIL: Error toggling favorite: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
   @override
@@ -119,11 +225,33 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   _buildInfoRow(
                     context,
                     icon: Icons.attach_money,
-                    text: _formatCurrency(
-                      widget.event.minPrice,
-                      widget.event.currency,
-                    ),
+                    text:
+                        _convertedPriceText ??
+                        _formatPriceRange(
+                          widget.event.minPrice,
+                          widget.event.maxPrice,
+                          widget.event.currency,
+                        ),
                   ),
+                  const SizedBox(height: 12),
+                  if (_convertedPriceText == null)
+                    ElevatedButton.icon(
+                      onPressed: _isConverting
+                          ? null
+                          : () async {
+                              await _showConvertedPrice();
+                            },
+                      icon: const Icon(Icons.currency_exchange),
+                      label: Text(
+                        _isConverting ? 'Memproses...' : 'Konversi ke IDR',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 24),
                   Text(
                     "Perbandingan Zona Waktu",

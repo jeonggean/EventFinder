@@ -1,3 +1,4 @@
+import 'package:eventfinder/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -28,9 +29,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   void initState() {
     super.initState();
     _isFavorite = _favoritesService.isFavorite(widget.event);
-    print(
-      'DEBUG DETAIL: initState - isFavorite: $_isFavorite for event: ${widget.event.name}',
-    );
   }
 
   Future<void> _showConvertedPrice() async {
@@ -138,16 +136,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         setState(() {
           _isFavorite = false;
         });
-        print('DEBUG DETAIL: Removed from favorites');
       } else {
         await _favoritesService.addFavorite(widget.event);
         setState(() {
           _isFavorite = true;
         });
-        print('DEBUG DETAIL: Added to favorites');
       }
     } catch (e) {
-      print('DEBUG DETAIL: Error toggling favorite: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -163,121 +158,63 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       widget.event.localTime,
     );
 
-    final Map<String, String> convertedTimes = _timezoneHelper
-        .getConvertedTimes(isoDateTime, widget.event.timezone);
+    final Map<String, String> convertedTimes =
+        _timezoneHelper.getConvertedTimes(isoDateTime, widget.event.timezone);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Detail Acara",
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isFavorite ? Icons.favorite : Icons.favorite_border,
-              color: _isFavorite ? Colors.red : Colors.white,
-            ),
-            onPressed: _toggleFavorite,
-          ),
+      body: Stack(
+        children: [
+          _buildBackgroundImage(),
+          _buildNavigationButtons(),
+          _buildContentSheet(convertedTimes),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+
+  Widget _buildBackgroundImage() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.45,
+      width: double.infinity,
+      child: Image.network(
+        widget.event.imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Container(
+          color: Theme.of(context).cardColor,
+          child: const Icon(
+            Icons.broken_image,
+            size: 60,
+            color: AppColors.kSecondaryTextColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationButtons() {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Image.network(
-              widget.event.imageUrl,
-              height: 250,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                height: 250,
-                width: double.infinity,
-                color: Colors.grey[200],
-                child: const Icon(
-                  Icons.broken_image,
-                  size: 60,
-                  color: Colors.grey,
-                ),
+            CircleAvatar(
+              backgroundColor: Colors.black.withOpacity(0.4),
+              child: IconButton(
+                icon: Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.event.name,
-                    style: GoogleFonts.nunito(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoRow(
-                    context,
-                    icon: Icons.calendar_today,
-                    text:
-                        "${widget.event.localDate} @ ${widget.event.localTime} (${widget.event.timezone})",
-                  ),
-                  const SizedBox(height: 12),
-                  _buildInfoRow(
-                    context,
-                    icon: Icons.attach_money,
-                    text:
-                        _convertedPriceText ??
-                        _formatPriceRange(
-                          widget.event.minPrice,
-                          widget.event.maxPrice,
-                          widget.event.currency,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (_convertedPriceText == null)
-                    ElevatedButton.icon(
-                      onPressed: _isConverting
-                          ? null
-                          : () async {
-                              await _showConvertedPrice();
-                            },
-                      icon: const Icon(Icons.currency_exchange),
-                      label: Text(
-                        _isConverting ? 'Memproses...' : 'Konversi ke IDR',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 24),
-                  Text(
-                    "Perbandingan Zona Waktu",
-                    style: GoogleFonts.nunito(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                  const Divider(height: 20),
-                  _buildTimezoneRow(
-                    "WIB (Jakarta)",
-                    convertedTimes['WIB'] ?? 'N/A',
-                  ),
-                  _buildTimezoneRow(
-                    "WITA (Makassar)",
-                    convertedTimes['WITA'] ?? 'N/A',
-                  ),
-                  _buildTimezoneRow(
-                    "WIT (Jayapura)",
-                    convertedTimes['WIT'] ?? 'N/A',
-                  ),
-                  _buildTimezoneRow(
-                    "London",
-                    convertedTimes['London'] ?? 'N/A',
-                  ),
-                ],
+            CircleAvatar(
+              backgroundColor: Colors.black.withOpacity(0.4),
+              child: IconButton(
+                icon: Icon(
+                  _isFavorite ? Icons.bookmark : Icons.bookmark_border_outlined,
+                  color: _isFavorite
+                      ? AppColors.kPrimaryColor
+                      : Colors.white,
+                ),
+                onPressed: _toggleFavorite,
               ),
             ),
           ],
@@ -286,16 +223,128 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  Widget _buildInfoRow(
-    BuildContext context, {
-    required IconData icon,
-    required String text,
-  }) {
+  Widget _buildContentSheet(Map<String, String> convertedTimes) {
+    return Container(
+      margin: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.4),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30.0)),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.event.name,
+              style: GoogleFonts.nunito(
+                fontWeight: FontWeight.bold,
+                fontSize: 26,
+                color: AppColors.kTextColor,
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildDetailItem(
+              icon: Icons.calendar_today_outlined,
+              title: "Tanggal & Waktu",
+              subtitle:
+                  "${widget.event.localDate} @ ${widget.event.localTime} (${widget.event.timezone})",
+            ),
+            const SizedBox(height: 16),
+            _buildDetailItem(
+              icon: Icons.attach_money,
+              title: "Harga",
+              subtitle: _convertedPriceText ??
+                  _formatPriceRange(
+                    widget.event.minPrice,
+                    widget.event.maxPrice,
+                    widget.event.currency,
+                  ),
+            ),
+            const SizedBox(height: 20),
+            if (_convertedPriceText == null)
+              ElevatedButton.icon(
+                onPressed: _isConverting ? null : _showConvertedPrice,
+                icon: Icon(Icons.currency_exchange, size: 18),
+                label: Text(
+                  _isConverting ? 'Memproses...' : 'Konversi ke IDR',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+              ),
+            const SizedBox(height: 30),
+            Text(
+              "Perbandingan Zona Waktu",
+              style: GoogleFonts.nunito(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: AppColors.kTextColor,
+              ),
+            ),
+            Divider(height: 20, color: Theme.of(context).cardColor),
+            _buildTimezoneRow(
+              "WIB (Jakarta)",
+              convertedTimes['WIB'] ?? 'N/A',
+            ),
+            _buildTimezoneRow(
+              "WITA (Makassar)",
+              convertedTimes['WITA'] ?? 'N/A',
+            ),
+            _buildTimezoneRow(
+              "WIT (Jayapura)",
+              convertedTimes['WIT'] ?? 'N/A',
+            ),
+            _buildTimezoneRow(
+              "London",
+              convertedTimes['London'] ?? 'N/A',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailItem(
+      {required IconData icon,
+      required String title,
+      required String subtitle}) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 12),
-        Flexible(child: Text(text, style: const TextStyle(fontSize: 16))),
+        CircleAvatar(
+          radius: 24,
+          backgroundColor: Theme.of(context).cardColor,
+          child: Icon(icon, color: AppColors.kPrimaryColor, size: 20),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.nunito(
+                  fontSize: 16,
+                  color: AppColors.kSecondaryTextColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: GoogleFonts.nunito(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.kTextColor,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -306,10 +355,17 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(zoneName, style: const TextStyle(fontSize: 16)),
+          Text(
+            zoneName,
+            style:
+                TextStyle(fontSize: 16, color: AppColors.kSecondaryTextColor),
+          ),
           Text(
             time,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.kTextColor),
           ),
         ],
       ),

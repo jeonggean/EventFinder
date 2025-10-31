@@ -1,7 +1,8 @@
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 class LocationService {
-  Future<String> getCurrentLocation() async {
+  Future<Position> _getPosition() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       throw Exception('Layanan lokasi tidak aktif.');
@@ -19,10 +20,32 @@ class LocationService {
       throw Exception('Izin lokasi ditolak permanen, buka pengaturan HP.');
     }
 
-    Position position = await Geolocator.getCurrentPosition(
+    return await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
+  }
 
+  Future<String> getCurrentLocation() async {
+    Position position = await _getPosition();
     return "${position.latitude},${position.longitude}";
+  }
+
+  Future<String?> getCityName() async {
+    try {
+      Position position = await _getPosition();
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        return place.locality ?? place.subAdministrativeArea ?? "Lokasi";
+      }
+      return "Lokasi Tidak Dikenal";
+    } catch (e) {
+      print('Error di getCityName: $e');
+      throw Exception('Gagal mendapatkan nama lokasi.');
+    }
   }
 }

@@ -1,3 +1,4 @@
+import 'package:eventfinder/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -5,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'features/0_navigation/main_navigation_screen.dart';
 import 'features/2_auth/services/auth_service.dart';
 import 'features/2_auth/screens/login_screen.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +17,8 @@ void main() async {
   await Hive.openBox('users');
   await Hive.openBox('favorites');
 
+  tz.initializeTimeZones();
+
   runApp(const MyApp());
 }
 
@@ -23,58 +27,52 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryColor = Color(0xFF9575CD);
-    final Color backgroundColor = Color(0xFFF9F9F9);
-    final Color cardColor = Color(0xFFFFFFFF);
-    final Color primaryTextColor = Color(0xFF333333);
-    final Color secondaryTextColor = Color(0xFF828282);
-
     return MaterialApp(
       title: 'Event Finder (MVC)',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.light,
-        primaryColor: primaryColor,
-        scaffoldBackgroundColor: backgroundColor,
-
-        fontFamily: GoogleFonts.nunito().fontFamily,
-
+      theme: ThemeData.light().copyWith(
+        scaffoldBackgroundColor: AppColors.kBackgroundColor,
+        primaryColor: AppColors.kPrimaryColor,
+        cardColor: AppColors.kCardColor,
+        colorScheme: ColorScheme.light(
+          primary: AppColors.kPrimaryColor,
+          secondary: AppColors.kAccentColor,
+          onSurface: AppColors.kTextColor,
+        ),
         appBarTheme: AppBarTheme(
-          backgroundColor: primaryColor,
-          elevation: 1,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.kBackgroundColor,
+          foregroundColor: AppColors.kTextColor,
+          elevation: 0,
           titleTextStyle: GoogleFonts.nunito(
-            color: Colors.white,
-            fontSize: 22,
             fontWeight: FontWeight.bold,
+            color: AppColors.kTextColor,
+            fontSize: 20,
           ),
         ),
-
-        cardTheme: CardThemeData(
-          clipBehavior: Clip.antiAlias,
-          color: cardColor,
-          elevation: 2,
-          shadowColor: Colors.grey.withOpacity(0.2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+        textTheme: GoogleFonts.nunitoTextTheme(ThemeData.light().textTheme)
+            .apply(
+          bodyColor: AppColors.kTextColor,
+          displayColor: AppColors.kTextColor,
         ),
-
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: primaryColor,
-            foregroundColor: Colors.white,
-          ),
+              backgroundColor: AppColors.kPrimaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              textStyle: GoogleFonts.nunito(
+                  fontWeight: FontWeight.bold, fontSize: 16)),
         ),
-        iconTheme: IconThemeData(color: secondaryTextColor),
-        colorScheme: ColorScheme.light(
-          primary: primaryColor,
-          background: backgroundColor,
-          surface: cardColor,
-          onPrimary: Colors.white,
-          onBackground: primaryTextColor,
-          onSurface: primaryTextColor,
-          secondary: primaryColor,
+        cardTheme: CardThemeData(
+          clipBehavior: Clip.antiAlias,
+          color: AppColors.kCardColor,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       ),
       home: SplashScreen(),
@@ -118,6 +116,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return Scaffold(
+        body: Center(
+            child: CircularProgressIndicator(
+      color: AppColors.kPrimaryColor,
+    )));
   }
 }

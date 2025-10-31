@@ -1,3 +1,4 @@
+import 'package:eventfinder/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../2_auth/services/auth_service.dart';
@@ -33,7 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _goToAboutScreen() {
-     Navigator.push(
+    Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AboutScreen()),
     );
@@ -45,63 +46,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: Text(
           'Profil Saya',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
         ),
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                child: Icon(
-                  Icons.person,
-                  size: 60,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Spacer(flex: 1),
+            CircleAvatar(
+              radius: 50,
+              backgroundColor: Theme.of(context).cardColor,
+              child: Icon(
+                Icons.person_outline,
+                size: 60,
+                color: Theme.of(context).colorScheme.primary,
               ),
-              const SizedBox(height: 24),
-              Text(
-                'Selamat datang,',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.nunito(fontSize: 18),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _username ?? 'Pengguna',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: AppColors.kTextColor,
               ),
-              Text(
-                _username ?? 'Pengguna',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.nunito(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+            ),
+            Text(
+              'Selamat datang kembali!',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                fontSize: 16,
+                color: AppColors.kSecondaryTextColor,
               ),
-              const SizedBox(height: 48),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.info_outline),
-                label: const Text('Tentang Aplikasi'),
-                onPressed: _goToAboutScreen,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 16)
-                ),
+            ),
+            const Spacer(flex: 2),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.info_outline),
+              label: const Text('Tentang Aplikasi'),
+              onPressed: _goToAboutScreen,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.logout),
+              label: const Text('Logout'),
+              onPressed: _logout,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
               ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.logout),
-                label: const Text('Logout'),
-                onPressed: _logout,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
-                   padding: const EdgeInsets.symmetric(vertical: 16),
-                   textStyle: GoogleFonts.nunito(fontWeight: FontWeight.bold, fontSize: 16)
-                ),
-              ),
-            ],
-          ),
+            ),
+            const Spacer(flex: 1),
+          ],
         ),
       ),
     );

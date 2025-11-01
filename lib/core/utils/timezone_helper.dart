@@ -1,53 +1,39 @@
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
 import 'package:intl/intl.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
 
 class TimezoneHelper {
-  TimezoneHelper() {
-    tz.initializeTimeZones();
-  }
-
-  String _getConvertedTime(tz.TZDateTime eventTime, String locationName) {
-    try {
-      final location = tz.getLocation(locationName);
-      final convertedTime = tz.TZDateTime.from(eventTime, location);
-      return DateFormat('HH:mm').format(convertedTime);
-    } catch (e) {
-      return "N/A";
-    }
-  }
-
-  Map<String, String> getConvertedTimes(
-    String isoDateTime,
-    String eventTimezone,
-  ) {
-    tz.TZDateTime eventTime;
-    try {
-      final eventLocation = tz.getLocation(eventTimezone);
-      eventTime = tz.TZDateTime.from(
-        DateTime.parse(isoDateTime),
-        eventLocation,
-      );
-    } catch (e) {
-      eventTime = tz.TZDateTime.now(tz.local);
-    }
-
-    return {
-      'WIB': _getConvertedTime(eventTime, 'Asia/Jakarta'),
-      'WITA': _getConvertedTime(eventTime, 'Asia/Makassar'),
-      'WIT': _getConvertedTime(eventTime, 'Asia/Jayapura'),
-      'London': _getConvertedTime(eventTime, 'Europe/London'),
-    };
-  }
-
   String getIsoDateTime(String localDate, String localTime) {
-    if (localDate == 'No Date' || localTime == 'No Time') {
+    if (localDate == 'TBA' || localTime == 'TBA') {
       return DateTime.now().toIso8601String();
     }
     try {
-      return "${localDate}T${localTime}";
+      final dateTimeStr = "${localDate}T${localTime}";
+      return DateTime.parse(dateTimeStr).toIso8601String();
     } catch (e) {
       return DateTime.now().toIso8601String();
+    }
+  }
+
+  Map<String, String> getConvertedTimeForZone(
+      String isoDateTime, String originalTimezone, String targetTimezoneId) {
+    try {
+      final tz.Location originalLocation = tz.getLocation(originalTimezone);
+      final tz.TZDateTime originalZonedDateTime =
+          tz.TZDateTime.parse(originalLocation, isoDateTime);
+
+      final tz.Location targetLocation = tz.getLocation(targetTimezoneId);
+      final tz.TZDateTime targetZonedDateTime =
+          tz.TZDateTime.from(originalZonedDateTime, targetLocation);
+
+      return {
+        'date': DateFormat('EEEE, dd MMMM yyyy', 'id_ID')
+            .format(targetZonedDateTime),
+        'time': DateFormat("HH:mm").format(targetZonedDateTime),
+      };
+    } catch (e) {
+      print('Timezone conversion error: $e');
+      return {'date': 'Error Konversi', 'time': 'Error'};
     }
   }
 }

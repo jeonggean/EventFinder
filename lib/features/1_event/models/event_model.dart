@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:intl/intl.dart';
 
 class EventModel {
   final String id;
@@ -10,6 +11,9 @@ class EventModel {
   final String currency;
   final double minPrice;
   final double maxPrice;
+  final String venueName;
+  final String venueCity;
+  final String venueCountry;
 
   EventModel({
     required this.id,
@@ -21,6 +25,9 @@ class EventModel {
     required this.currency,
     required this.minPrice,
     required this.maxPrice,
+    required this.venueName,
+    required this.venueCity,
+    required this.venueCountry,
   });
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
@@ -39,7 +46,6 @@ class EventModel {
       return 'https://i.imgur.com/gA1q3nJ.png';
     }
 
-    // Deterministic hash function untuk generate random seed dari event ID
     int _hashString(String str) {
       int hash = 5381;
       for (int i = 0; i < str.length; i++) {
@@ -48,13 +54,40 @@ class EventModel {
       return hash.abs();
     }
 
-    // Get currency, minPrice, maxPrice with fallback to deterministic pseudo-random
     final String eventId = json['id'] ?? '';
     String currency;
     double minPrice;
     double maxPrice;
 
-    // Check if priceRanges exists
+    String getVenueName(Map<String, dynamic>? embedded) {
+      if (embedded == null || !embedded.containsKey('venues') || (embedded['venues'] as List).isEmpty) {
+        return "Lokasi tidak tersedia";
+      }
+      return embedded['venues'][0]['name'] ?? "Lokasi tidak tersedia";
+    }
+
+    String getVenueCity(Map<String, dynamic>? embedded) {
+      if (embedded == null || !embedded.containsKey('venues') || (embedded['venues'] as List).isEmpty) {
+        return "N/A";
+      }
+      final venue = embedded['venues'][0];
+      if (venue.containsKey('city') && venue['city'] != null) {
+        return venue['city']['name'] ?? "N/A";
+      }
+      return "N/A";
+    }
+
+    String getVenueCountry(Map<String, dynamic>? embedded) {
+      if (embedded == null || !embedded.containsKey('venues') || (embedded['venues'] as List).isEmpty) {
+        return "N/A";
+      }
+      final venue = embedded['venues'][0];
+      if (venue.containsKey('country') && venue['country'] != null) {
+        return venue['country']['name'] ?? "N/A";
+      }
+      return "N/A";
+    }
+
     if (json['priceRanges'] != null && json['priceRanges'].isNotEmpty) {
       final priceRange = json['priceRanges'][0];
       currency = priceRange['currency'] ?? 'USD';
@@ -63,26 +96,20 @@ class EventModel {
     } else if (json.containsKey('currency') &&
         json.containsKey('minPrice') &&
         json.containsKey('maxPrice')) {
-      // If already persisted (from Hive)
       currency = json['currency'] ?? 'USD';
       minPrice = (json['minPrice'] as num?)?.toDouble() ?? 0.0;
       maxPrice = (json['maxPrice'] as num?)?.toDouble() ?? 0.0;
     } else {
-      // Generate deterministic pseudo-random price based on event ID
       currency = 'USD';
       final seed = _hashString(eventId);
       final random = Random(seed);
-
-      // Generate min price between $15 - $50
       minPrice = 15.0 + (random.nextDouble() * 35.0);
-
-      // Generate max price between minPrice + $20 and minPrice + $80
       maxPrice = minPrice + 20.0 + (random.nextDouble() * 60.0);
-
-      // Round to 2 decimal places
       minPrice = double.parse(minPrice.toStringAsFixed(2));
       maxPrice = double.parse(maxPrice.toStringAsFixed(2));
     }
+
+    final embeddedData = json['_embedded'] as Map<String, dynamic>?;
 
     return EventModel(
       id: eventId,
@@ -100,6 +127,9 @@ class EventModel {
       currency: currency,
       minPrice: minPrice,
       maxPrice: maxPrice,
+      venueName: getVenueName(embeddedData),
+      venueCity: getVenueCity(embeddedData),
+      venueCountry: getVenueCountry(embeddedData),
     );
   }
 
@@ -114,6 +144,9 @@ class EventModel {
       'currency': currency,
       'minPrice': minPrice,
       'maxPrice': maxPrice,
+      'venueName': venueName,
+      'venueCity': venueCity,
+      'venueCountry': venueCountry,
     };
   }
 }

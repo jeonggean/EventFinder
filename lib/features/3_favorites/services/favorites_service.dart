@@ -1,92 +1,95 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'dart:convert';
+import 'package:sqflite/sqflite.dart';
+import '../../../core/services/database_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../../1_event/models/event_model.dart';
 import '../../2_auth/services/auth_service.dart';
 
 class FavoritesService {
-  final Box _favoritesBox = Hive.box('favorites');
   final AuthService _authService = AuthService();
+  Future<Database> get _db async => await DatabaseService.instance.database;
 
-  String _getCurrentUser() {
-    final user = _authService.getCurrentUser();
-    if (user == null) {
-      throw Exception("User tidak login");
+  Future<int?> _getCurrentUserId() async {
+    return await _authService.getCurrentUserId();
+  }
+
+  Future<List<EventModel>> getFavorites() async {
+    final userId = await _getCurrentUserId();
+    if (userId == null) return [];
+
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'favorites',
+      where: 'userId = ?',
+      whereArgs: [userId],
+      orderBy: 'id DESC', // Tampilkan yang terbaru di atas
+    );
+
+    if (maps.isEmpty) {
+      return [];
     }
-    return user;
-  }
 
-  List<Map> _getUserFavorites(String username) {
-    final dynamicList = _favoritesBox.get(username) ?? [];
-    print(
-      'DEBUG FAVORITES SERVICE: Getting raw favorites for $username from Hive',
-    );
-    print('DEBUG FAVORITES SERVICE: Raw data type: ${dynamicList.runtimeType}');
-    print('DEBUG FAVORITES SERVICE: Raw data: $dynamicList');
-    final result = List<Map>.from(dynamicList);
-    print(
-      'DEBUG FAVORITES SERVICE: Converted to List<Map>, count: ${result.length}',
-    );
-    return result;
-  }
-
-  List<EventModel> getFavorites() {
-    final user = _getCurrentUser();
-    final favListMap = _getUserFavorites(user);
-
-    print('DEBUG FAVORITES: Getting favorites for user $user');
-    print('DEBUG FAVORITES: Found ${favListMap.length} favorites');
-
-    return favListMap
-        .map((json) => EventModel.fromJson(json as Map<String, dynamic>))
-        .toList();
+    return maps.map((map) {
+      final String eventJson = map['eventJson'];
+      return EventModel.fromJson(jsonDecode(eventJson));
+    }).toList();
   }
 
   Future<void> addFavorite(EventModel event) async {
-    final user = _getCurrentUser();
-    print('DEBUG FAVORITES: Current user: $user');
+    final userId = await _getCurrentUserId();
+    if (userId == null) throw Exception("User not logged in");
 
-    final favList = _getUserFavorites(user);
-    print(
-      'DEBUG FAVORITES: Current favorites count before add: ${favList.length}',
-    );
+    final db = await _db;
+    final String eventJson = jsonEncode(event.toJson());
 
-    favList.add(event.toJson());
-    print('DEBUG FAVORITES: Favorites count after add: ${favList.length}');
-
-    await _favoritesBox.put(user, favList);
-    print('DEBUG FAVORITES: Saved to Hive for user: $user');
-
-    // Verify saved data
-    final verify = _favoritesBox.get(user);
-    print(
-      'DEBUG FAVORITES: Verification - data in Hive: ${verify?.length ?? 0} items',
-    );
-
-    print('DEBUG FAVORITES: Added ${event.name} for user $user');
-    print('DEBUG FAVORITES: Total favorites now: ${favList.length}');
-
-    // Show instant notification when adding to favorites
+    // Show notification when adding to favorites
     await NotificationService.showNotification(
-      '⭐ Event ditambahkan ke favorit!',
-      '${event.name} berhasil ditambahkan ke daftar favorit Anda.',
+      "Event Ditambahkan ke Favorit",
+      "Event '${event.name}' telah ditambahkan ke daftar favorit Anda"
     );
+
+    try {
+      await db.insert(
+        'favorites',
+        {
+          'userId': userId,
+          'eventId': event.id,
+          'eventJson': eventJson,
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore, // Abaikan jika sudah ada
+      );
+    } catch (e) {
+      print("Error adding favorite: $e");
+    }
   }
 
   Future<void> removeFavorite(EventModel event) async {
-    final user = _getCurrentUser();
-    final favList = _getUserFavorites(user);
+    final userId = await _getCurrentUserId();
+    if (userId == null) throw Exception("User not logged in");
 
-    favList.removeWhere((item) => item['id'] == event.id);
-    await _favoritesBox.put(user, favList);
+    final db = await _db;
+    try {
+      await db.delete(
+        'favorites',
+        where: 'userId = ? AND eventId = ?',
+        whereArgs: [userId, event.id],
+      );
+    } catch (e) {
+      print("Error removing favorite: $e");
+    }
   }
 
-  bool isFavorite(EventModel event) {
-    try {
-      final user = _getCurrentUser();
-      final favList = _getUserFavorites(user);
-      return favList.any((item) => item['id'] == event.id);
-    } catch (e) {
-      return false;
-    }
+  Future<bool> isFavorite(EventModel event) async {
+    final userId = await _getCurrentUserId();
+    if (userId == null) return false;
+
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'favorites',
+      where: 'userId = ? AND eventId = ?',
+      whereArgs: [userId, event.id],
+    );
+
+    return maps.isNotEmpty;
   }
 }

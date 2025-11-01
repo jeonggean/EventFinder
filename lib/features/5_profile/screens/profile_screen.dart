@@ -1,3 +1,4 @@
+// lib/features/5_profile/screens/profile_screen.dart
 import 'package:eventfinder/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,12 +15,14 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _authService = AuthService();
-  String? _username;
+  // Ubah ini menjadi Future
+  late Future<String?> _usernameFuture; 
 
   @override
   void initState() {
     super.initState();
-    _username = _authService.getCurrentUser();
+    // Panggil method async di initState
+    _usernameFuture = _authService.getCurrentUsername();
   }
 
   Future<void> _logout() async {
@@ -64,23 +67,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              _username ?? 'Pengguna',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: AppColors.kTextColor,
-              ),
+            
+            // Gunakan FutureBuilder untuk menampilkan username
+            FutureBuilder<String?>(
+              future: _usernameFuture,
+              builder: (context, snapshot) {
+                final username = snapshot.data ?? 'Pengguna';
+                return Column(
+                  children: [
+                    Text(
+                      username,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.kTextColor,
+                      ),
+                    ),
+                    Text(
+                      'Selamat datang kembali!',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        fontSize: 16,
+                        color: AppColors.kSecondaryTextColor,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-            Text(
-              'Selamat datang kembali!',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
-                fontSize: 16,
-                color: AppColors.kSecondaryTextColor,
-              ),
-            ),
+
             const Spacer(flex: 2),
             ElevatedButton.icon(
               icon: const Icon(Icons.info_outline),

@@ -64,7 +64,7 @@ class _EventListScreenState extends State<EventListScreen>
     if (!_tabController.indexIsChanging) {
       _controller.changeMode(
         _tabController.index == 0
-            ? EventListMode.nearby
+            ? EventListMode.asean
             : EventListMode.popular,
       );
     }
@@ -140,13 +140,6 @@ class _EventListScreenState extends State<EventListScreen>
                 ),
               ),
             ],
-          ),
-          CircleAvatar(
-            backgroundColor: Theme.of(context).cardColor,
-            child: Icon(
-              Icons.notifications_outlined,
-              color: AppColors.kSecondaryTextColor,
-            ),
           ),
         ],
       ),
@@ -257,13 +250,7 @@ class _EventListScreenState extends State<EventListScreen>
 
     if (_controller.errorMessage.isNotEmpty && events.isEmpty) {
       String displayError = _controller.errorMessage;
-      if (displayError.contains('Izin lokasi ditolak')) {
-        displayError =
-            'Izin lokasi dibutuhkan untuk menampilkan acara di sekitarmu. Aktifkan di pengaturan HP.';
-      } else if (displayError.contains('Layanan lokasi tidak aktif')) {
-        displayError =
-            'Layanan lokasi (GPS) di HP-mu mati. Aktifkan untuk mencari acara di sekitar.';
-      } else if (displayError.contains('Gagal memuat data event')) {
+      if (displayError.contains('Gagal memuat data event')) {
         displayError =
             'Gagal mengambil data dari server. Cek koneksi internetmu.';
       }
@@ -280,8 +267,8 @@ class _EventListScreenState extends State<EventListScreen>
     }
 
     if (events.isEmpty) {
-      String message = _controller.currentMode == EventListMode.nearby
-          ? 'Tidak ada acara ditemukan di sekitarmu.'
+      String message = _controller.currentMode == EventListMode.asean
+          ? 'Tidak ada acara ditemukan di ASEAN.'
           : 'Tidak ada acara populer ditemukan.';
       if (_searchController.text.isNotEmpty) {
         message =

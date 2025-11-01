@@ -11,13 +11,13 @@ class FavoritesController extends ChangeNotifier {
   List<EventModel> get favorites => _favorites;
   bool get isLoading => _isLoading;
 
-  void loadFavorites() {
+  Future<void> loadFavorites() async {
     _isLoading = true;
     notifyListeners();
 
     try {
       print('DEBUG CONTROLLER: Loading favorites...');
-      _favorites = _service.getFavorites();
+      _favorites = await _service.getFavorites();
       print('DEBUG CONTROLLER: Loaded ${_favorites.length} favorites');
       for (var fav in _favorites) {
         print('DEBUG CONTROLLER: - ${fav.name}');

@@ -2,6 +2,7 @@ import 'package:eventfinder/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+
 import '../../1_event/models/event_model.dart';
 import '../../1_event/screens/event_detail_screen.dart';
 import '../controllers/favorites_controller.dart';
@@ -15,6 +16,8 @@ class FavoritesScreen extends StatefulWidget {
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
   late final FavoritesController _controller;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
 
   @override
   void initState() {
@@ -25,11 +28,18 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     });
 
     _controller.loadFavorites();
+
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -48,11 +58,44 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Favorit Saya',
+        title: Text('Favorit Saya'),
+      ),
+      body: Column(
+        children: [
+          _buildSearchBar(),
+          Expanded(child: _buildBody()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 8.0),
+      child: TextField(
+        controller: _searchController,
+        style: TextStyle(color: AppColors.kTextColor),
+        decoration: InputDecoration(
+          hintText: 'Cari di favorit...',
+          hintStyle: TextStyle(color: AppColors.kSecondaryTextColor),
+          prefixIcon: Icon(Icons.search, color: AppColors.kSecondaryTextColor),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.clear, color: AppColors.kSecondaryTextColor),
+                  onPressed: () {
+                    _searchController.clear();
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: Theme.of(context).cardColor,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15.0),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 16.0),
         ),
       ),
-      body: _buildBody(),
     );
   }
 
@@ -63,7 +106,26 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               color: Theme.of(context).colorScheme.primary));
     }
 
-    if (_controller.favorites.isEmpty) {
+    final List<EventModel> filteredFavorites;
+    if (_searchQuery.isEmpty) {
+      filteredFavorites = _controller.favorites;
+    } else {
+      filteredFavorites = _controller.favorites.where((event) {
+        return event.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      }).toList();
+    }
+
+    if (filteredFavorites.isEmpty) {
+      if (_searchQuery.isNotEmpty) {
+        return Center(
+          child: Text(
+            'Tidak ada favorit ditemukan untuk "$_searchQuery".',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(
+                fontSize: 16, color: AppColors.kSecondaryTextColor),
+          ),
+        );
+      }
       return Center(
         child: Text(
           'Kamu belum punya acara favorit.',
@@ -74,11 +136,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(24.0),
-      itemCount: _controller.favorites.length,
+      padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 24.0),
+      itemCount: filteredFavorites.length,
       separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
-        final EventModel event = _controller.favorites[index];
+        final EventModel event = filteredFavorites[index];
         return _buildEventCard(event);
       },
     );

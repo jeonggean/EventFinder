@@ -1,23 +1,26 @@
 import 'package:eventfinder/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:timezone/data/latest.dart' as tz; 
+import 'core/services/database_service.dart';
 import 'features/0_navigation/main_navigation_screen.dart';
 import 'features/2_auth/services/auth_service.dart';
 import 'features/2_auth/screens/login_screen.dart';
-import 'package:timezone/data/latest.dart' as tz;
+import 'core/services/notification_service.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  final appDocumentDir = await getApplicationDocumentsDirectory();
-  await Hive.initFlutter(appDocumentDir.path);
-  await Hive.openBox('session');
-  await Hive.openBox('users');
-  await Hive.openBox('favorites');
-
-  tz.initializeTimeZones();
+  
+  try {
+    await DatabaseService.instance.database;
+    await NotificationService.initNotifications();
+    await NotificationService.requestNotificationPermission();
+    await initializeDateFormatting('id_ID', null);
+    tz.initializeTimeZones();
+  } catch (e) {
+    print('Error initializing services: $e');
+  }
 
   runApp(const MyApp());
 }
@@ -100,7 +103,7 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(seconds: 1));
 
     if (mounted) {
-      if (_authService.isLoggedIn()) {
+      if (await _authService.isLoggedIn()) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => MainNavigationScreen()),

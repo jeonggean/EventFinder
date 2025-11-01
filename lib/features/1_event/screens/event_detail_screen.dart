@@ -21,25 +21,48 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   final FavoritesService _favoritesService = FavoritesService();
   final CurrencyService _currencyService = CurrencyService();
 
-  late bool _isFavorite;
-  bool _isConverting = false;
+  late Future<bool> _isFavoriteFuture;
+
+  bool _isConvertingPrice = false;
   String? _convertedPriceText;
+  late List<String> _targetCurrencies;
+  late String _selectedTargetCurrency;
+
+  final Map<String, String> _targetTimezones = {
+    'WIB (Jakarta)': 'Asia/Jakarta',
+    'WITA (Makassar)': 'Asia/Makassar',
+    'WIT (Jayapura)': 'Asia/Jayapura',
+    'London (GMT)': 'Europe/London',
+    'Tokyo (JST)': 'Asia/Tokyo',
+    'New York (ET)': 'America/New_York',
+  };
+  late String _selectedTimezoneKey;
+  Map<String, String>? _convertedTimeMap;
 
   @override
   void initState() {
     super.initState();
-    _isFavorite = _favoritesService.isFavorite(widget.event);
+    _isFavoriteFuture = _favoritesService.isFavorite(widget.event);
+
+    _targetCurrencies = ['IDR', 'USD', 'EUR', 'JPY'];
+    if (widget.event.currency != 'N/A' &&
+        !_targetCurrencies.contains(widget.event.currency)) {
+      _targetCurrencies.add(widget.event.currency);
+    }
+    _selectedTargetCurrency = _targetCurrencies.first;
+
+    _selectedTimezoneKey = _targetTimezones.keys.first;
   }
 
-  Future<void> _showConvertedPrice() async {
+  Future<void> _showConvertedPrice(String targetCurrency) async {
     setState(() {
-      _isConverting = true;
+      _isConvertingPrice = true;
     });
 
     try {
       final rates = await _currencyService.getRates();
       final from = widget.event.currency;
-      const to = 'IDR';
+      final to = targetCurrency;
 
       if (!rates.containsKey(from) || !rates.containsKey(to)) {
         if (!mounted) return;
@@ -60,20 +83,45 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       final convertedMin = convert(widget.event.minPrice);
       final convertedMax = convert(widget.event.maxPrice);
 
-      final idrFormat = NumberFormat.currency(
-        locale: 'id_ID',
-        symbol: 'IDR ',
-        decimalDigits: 2,
-      );
+      final Map<String, NumberFormat> formatters = {
+        'IDR': NumberFormat.currency(
+          locale: 'id_ID',
+          symbol: 'IDR ',
+          decimalDigits: 2,
+        ),
+        'USD': NumberFormat.currency(
+          locale: 'en_US',
+          symbol: 'USD ',
+          decimalDigits: 2,
+        ),
+        'EUR': NumberFormat.currency(
+          locale: 'de_DE',
+          symbol: 'EUR ',
+          decimalDigits: 2,
+        ),
+        'JPY': NumberFormat.currency(
+          locale: 'ja_JP',
+          symbol: 'JPY ',
+          decimalDigits: 0,
+        ),
+      };
+
+      final format =
+          formatters[targetCurrency] ??
+          NumberFormat.currency(
+            locale: 'en_US',
+            symbol: '$targetCurrency ',
+            decimalDigits: 2,
+          );
 
       String message;
       if (convertedMin > 0 &&
           convertedMax > 0 &&
           convertedMax != convertedMin) {
         message =
-            '${idrFormat.format(convertedMin)} - ${idrFormat.format(convertedMax)}';
+            '${format.format(convertedMin)} - ${format.format(convertedMax)}';
       } else if (convertedMin > 0) {
-        message = idrFormat.format(convertedMin);
+        message = format.format(convertedMin);
       } else {
         message = 'Harga tidak tersedia';
       }
@@ -90,10 +138,29 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     } finally {
       if (mounted) {
         setState(() {
-          _isConverting = false;
+          _isConvertingPrice = false;
         });
       }
     }
+  }
+
+  void _showConvertedTime() {
+    final String targetTimezoneId = _targetTimezones[_selectedTimezoneKey]!;
+    final String isoDateTime = _timezoneHelper.getIsoDateTime(
+      widget.event.localDate,
+      widget.event.localTime,
+    );
+
+    final Map<String, String> convertedTime = _timezoneHelper
+        .getConvertedTimeForZone(
+          isoDateTime,
+          widget.event.timezone,
+          targetTimezoneId,
+        );
+
+    setState(() {
+      _convertedTimeMap = convertedTime;
+    });
   }
 
   String _formatPriceRange(
@@ -129,44 +196,49 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     ).format(price);
   }
 
-  void _toggleFavorite() async {
+  String _formatDate(String dateString) {
+    if (dateString == 'TBA') return 'Tanggal Belum Diumumkan';
     try {
-      if (_isFavorite) {
+      final DateTime date = DateTime.parse(dateString);
+      return DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(date);
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  void _toggleFavorite(bool isCurrentlyFavorite) async {
+    try {
+      if (isCurrentlyFavorite) {
         await _favoritesService.removeFavorite(widget.event);
-        setState(() {
-          _isFavorite = false;
-        });
       } else {
         await _favoritesService.addFavorite(widget.event);
+      }
+
+      if (mounted) {
         setState(() {
-          _isFavorite = true;
+          _isFavoriteFuture = _favoritesService.isFavorite(widget.event);
         });
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final String isoDateTime = _timezoneHelper.getIsoDateTime(
-      widget.event.localDate,
-      widget.event.localTime,
-    );
-
-    final Map<String, String> convertedTimes =
-        _timezoneHelper.getConvertedTimes(isoDateTime, widget.event.timezone);
-
     return Scaffold(
       body: Stack(
         children: [
           _buildBackgroundImage(),
           _buildNavigationButtons(),
-          _buildContentSheet(convertedTimes),
+          _buildContentSheet(),
         ],
       ),
     );
@@ -205,17 +277,39 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
-            CircleAvatar(
-              backgroundColor: Colors.black.withOpacity(0.4),
-              child: IconButton(
-                icon: Icon(
-                  _isFavorite ? Icons.bookmark : Icons.bookmark_border_outlined,
-                  color: _isFavorite
-                      ? AppColors.kPrimaryColor
-                      : Colors.white,
-                ),
-                onPressed: _toggleFavorite,
-              ),
+            FutureBuilder<bool>(
+              future: _isFavoriteFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return CircleAvatar(
+                    backgroundColor: Colors.black.withOpacity(0.4),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  );
+                }
+
+                final bool isFavorite = snapshot.data ?? false;
+
+                return CircleAvatar(
+                  backgroundColor: Colors.black.withOpacity(0.4),
+                  child: IconButton(
+                    icon: Icon(
+                      isFavorite
+                          ? Icons.favorite
+                          : Icons.favorite_border_outlined,
+                      color: isFavorite
+                          ? AppColors.kPrimaryColor
+                          : Colors.white,
+                    ),
+                    onPressed: () => _toggleFavorite(isFavorite),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -223,7 +317,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  Widget _buildContentSheet(Map<String, String> convertedTimes) {
+  Widget _buildContentSheet() {
     return Container(
       margin: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.4),
       width: double.infinity,
@@ -247,15 +341,28 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             const SizedBox(height: 24),
             _buildDetailItem(
               icon: Icons.calendar_today_outlined,
-              title: "Tanggal & Waktu",
+              title: "Tanggal",
+              subtitle: _formatDate(widget.event.localDate),
+            ),
+            const SizedBox(height: 16),
+            _buildDetailItem(
+              icon: Icons.access_time_outlined,
+              title: "Waktu",
+              subtitle: widget.event.localTime,
+            ),
+            const SizedBox(height: 16),
+            _buildDetailItem(
+              icon: Icons.location_on_outlined,
+              title: "Lokasi",
               subtitle:
-                  "${widget.event.localDate} @ ${widget.event.localTime} (${widget.event.timezone})",
+                  "${widget.event.venueName}, ${widget.event.venueCountry}",
             ),
             const SizedBox(height: 16),
             _buildDetailItem(
               icon: Icons.attach_money,
               title: "Harga",
-              subtitle: _convertedPriceText ??
+              subtitle:
+                  _convertedPriceText ??
                   _formatPriceRange(
                     widget.event.minPrice,
                     widget.event.maxPrice,
@@ -263,23 +370,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   ),
             ),
             const SizedBox(height: 20),
-            if (_convertedPriceText == null)
-              ElevatedButton.icon(
-                onPressed: _isConverting ? null : _showConvertedPrice,
-                icon: Icon(Icons.currency_exchange, size: 18),
-                label: Text(
-                  _isConverting ? 'Memproses...' : 'Konversi ke IDR',
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-              ),
-            const SizedBox(height: 30),
             Text(
-              "Perbandingan Zona Waktu",
+              "Konversikan Harga ke Mata Uang Lain",
               style: GoogleFonts.nunito(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
@@ -287,32 +379,158 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ),
             ),
             Divider(height: 20, color: Theme.of(context).cardColor),
-            _buildTimezoneRow(
-              "WIB (Jakarta)",
-              convertedTimes['WIB'] ?? 'N/A',
+            Row(
+              children: [
+                Icon(
+                  Icons.currency_exchange,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12.0,
+                    vertical: 4.0,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  child: DropdownButton<String>(
+                    value: _selectedTargetCurrency,
+                    underline: Container(),
+                    items: _targetCurrencies.map((String currency) {
+                      return DropdownMenuItem<String>(
+                        value: currency,
+                        child: Text(
+                          currency,
+                          style: TextStyle(color: AppColors.kTextColor),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _selectedTargetCurrency = newValue;
+                        });
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isConvertingPrice
+                        ? null
+                        : () async {
+                            await _showConvertedPrice(_selectedTargetCurrency);
+                          },
+                    child: Text(_isConvertingPrice ? '...' : 'Konversi'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            _buildTimezoneRow(
-              "WITA (Makassar)",
-              convertedTimes['WITA'] ?? 'N/A',
+            const SizedBox(height: 40),
+            Text(
+              "Lihat Jadwal di Zona Waktu Lain",
+              style: GoogleFonts.nunito(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: AppColors.kTextColor,
+              ),
             ),
-            _buildTimezoneRow(
-              "WIT (Jayapura)",
-              convertedTimes['WIT'] ?? 'N/A',
+            Divider(height: 20, color: Theme.of(context).cardColor),
+            Row(
+              children: [
+                Icon(
+                  Icons.schedule,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12.0,
+                    vertical: 4.0,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  child: DropdownButton<String>(
+                    value: _selectedTimezoneKey,
+                    underline: Container(),
+                    items: _targetTimezones.keys.map((String key) {
+                      return DropdownMenuItem<String>(
+                        value: key,
+                        child: Text(
+                          key,
+                          style: TextStyle(color: AppColors.kTextColor),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _selectedTimezoneKey = newValue;
+                          _convertedTimeMap = null;
+                        });
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _showConvertedTime,
+                    child: Text('Konversi'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            _buildTimezoneRow(
-              "London",
-              convertedTimes['London'] ?? 'N/A',
-            ),
+            if (_convertedTimeMap != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  _buildDetailItem(
+                    icon: Icons.calendar_today_outlined,
+                    title: "Tanggal (Konversi)",
+                    subtitle: _convertedTimeMap!['date'] ?? 'N/A',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDetailItem(
+                    icon: Icons.access_time_outlined,
+                    title: "Waktu (Konversi)",
+                    subtitle: _convertedTimeMap!['time'] ?? 'N/A',
+                  ),
+                ],
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDetailItem(
-      {required IconData icon,
-      required String title,
-      required String subtitle}) {
+  Widget _buildDetailItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -346,29 +564,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildTimezoneRow(String zoneName, String time) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            zoneName,
-            style:
-                TextStyle(fontSize: 16, color: AppColors.kSecondaryTextColor),
-          ),
-          Text(
-            time,
-            style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.kTextColor),
-          ),
-        ],
-      ),
     );
   }
 }

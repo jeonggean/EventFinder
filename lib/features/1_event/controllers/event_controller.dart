@@ -3,32 +3,30 @@ import '../models/event_model.dart';
 import '../services/event_service.dart';
 import '../../../core/services/location_service.dart';
 
-enum EventListMode { nearby, popular }
+enum EventListMode { asean, popular }
 
 class EventController extends ChangeNotifier {
   final EventService _eventService = EventService();
-  final LocationService _locationService = LocationService();
 
-  List<EventModel> _nearbyEvents = [];
-  List<EventModel> _popularEventsUS = [];
-  bool _isLoadingNearby = true;
+  List<EventModel> _aseanEvents = [];
+  List<EventModel> _popularEventsGlobal = [];
+  bool _isLoadingAsean = true;
   bool _isLoadingPopular = false;
   String _errorMessage = '';
-  String? _currentLatLong;
-  EventListMode _currentMode = EventListMode.nearby;
+  EventListMode _currentMode = EventListMode.asean;
   bool _hasTriedLoadingPopular = false;
   bool _disposed = false;
 
   List<EventModel> get eventsToShow =>
-      _currentMode == EventListMode.nearby ? _nearbyEvents : _popularEventsUS;
-  bool get isLoading => _currentMode == EventListMode.nearby
-      ? _isLoadingNearby
+      _currentMode == EventListMode.asean ? _aseanEvents : _popularEventsGlobal;
+  bool get isLoading => _currentMode == EventListMode.asean
+      ? _isLoadingAsean
       : _isLoadingPopular;
   String get errorMessage => _errorMessage;
   EventListMode get currentMode => _currentMode;
 
   EventController() {
-    loadNearbyEvents();
+    loadAseanEvents();
   }
 
   @override
@@ -43,63 +41,36 @@ class EventController extends ChangeNotifier {
     }
   }
 
-  Future<void> _getInitialLocation() async {
-    if (_currentLatLong == null) {
-      try {
-        _currentLatLong = await _locationService.getCurrentLocation();
-        if (_disposed) return;
-        _errorMessage = '';
-        _safeNotifyListeners();
-      } catch (e) {
-        if (_disposed) return;
-        _errorMessage = e.toString().replaceAll("Exception: ", "");
-        _currentLatLong = null;
-        _safeNotifyListeners();
-      }
-    }
-  }
-
-  Future<void> loadNearbyEvents({String? keyword}) async {
-    _isLoadingNearby = true;
+  Future<void> loadAseanEvents({String? keyword}) async {
+    _isLoadingAsean = true;
     if (keyword == null) _errorMessage = '';
     _safeNotifyListeners();
 
-    await _getInitialLocation();
-    if (_disposed) return;
-
-    if (_currentLatLong == null) {
-      _nearbyEvents = [];
-      _isLoadingNearby = false;
-      _safeNotifyListeners();
-      return;
-    }
-
     try {
-      _nearbyEvents = await _eventService.fetchEvents(
-        latLong: _currentLatLong,
+      _aseanEvents = await _eventService.fetchEvents(
+        countryCode: "ID,SG,MY,TH,PH,VN",
         keyword: keyword,
       );
       if (_disposed) return;
-      if (_errorMessage.contains('lokasi')) _errorMessage = '';
+      _errorMessage = '';
     } catch (e) {
       if (_disposed) return;
       _errorMessage = e.toString().replaceAll("Exception: ", "");
-      _nearbyEvents = [];
+      _aseanEvents = [];
     }
 
-    _isLoadingNearby = false;
+    _isLoadingAsean = false;
     _safeNotifyListeners();
   }
 
-  Future<void> loadPopularEventsUS({String? keyword}) async {
+  Future<void> loadPopularGlobalEvents({String? keyword}) async {
     if (!_hasTriedLoadingPopular || keyword != null) {
       _isLoadingPopular = true;
       if (keyword == null) _errorMessage = '';
       _safeNotifyListeners();
 
       try {
-        _popularEventsUS = await _eventService.fetchEvents(
-          countryCode: "US",
+        _popularEventsGlobal = await _eventService.fetchEvents(
           keyword: keyword,
         );
         if (_disposed) return;
@@ -108,7 +79,7 @@ class EventController extends ChangeNotifier {
       } catch (e) {
         if (_disposed) return;
         _errorMessage = e.toString().replaceAll("Exception: ", "");
-        _popularEventsUS = [];
+        _popularEventsGlobal = [];
       }
 
       _isLoadingPopular = false;
@@ -117,22 +88,19 @@ class EventController extends ChangeNotifier {
   }
 
   Future<void> searchEvents(String keyword) async {
-    if (_currentMode == EventListMode.nearby) {
-      await loadNearbyEvents(keyword: keyword);
+    if (_currentMode == EventListMode.asean) {
+      await loadAseanEvents(keyword: keyword);
     } else {
-      await loadPopularEventsUS(keyword: keyword);
+      await loadPopularGlobalEvents(keyword: keyword);
     }
   }
 
   void changeMode(EventListMode newMode) {
     if (_currentMode != newMode) {
       _currentMode = newMode;
-      if (!(_currentMode == EventListMode.nearby &&
-          _errorMessage.contains('lokasi'))) {
-        _errorMessage = '';
-      }
+      _errorMessage = '';
       if (newMode == EventListMode.popular && !_hasTriedLoadingPopular) {
-        loadPopularEventsUS();
+        loadPopularGlobalEvents();
       } else {
         _safeNotifyListeners();
       }

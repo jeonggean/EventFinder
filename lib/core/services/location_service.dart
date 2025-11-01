@@ -30,7 +30,7 @@ class LocationService {
     return "${position.latitude},${position.longitude}";
   }
 
-  Future<String?> getCityName() async {
+  Future<Placemark> _getPlacemark() async {
     try {
       Position position = await _getPosition();
       List<Placemark> placemarks = await placemarkFromCoordinates(
@@ -39,13 +39,30 @@ class LocationService {
       );
 
       if (placemarks.isNotEmpty) {
-        Placemark place = placemarks[0];
-        return place.locality ?? place.subAdministrativeArea ?? "Lokasi";
+        return placemarks[0];
       }
-      return "Lokasi Tidak Dikenal";
+      throw Exception("Tidak ada placemark ditemukan.");
     } catch (e) {
-      print('Error di getCityName: $e');
-      throw Exception('Gagal mendapatkan nama lokasi.');
+      print('Error di _getPlacemark: $e');
+      throw Exception('Gagal mendapatkan info lokasi.');
+    }
+  }
+
+  Future<String?> getCityName() async {
+    try {
+      Placemark place = await _getPlacemark();
+      return place.locality ?? place.subAdministrativeArea ?? "Lokasi";
+    } catch (e) {
+      return "Gagal dapat lokasi";
+    }
+  }
+
+  Future<String?> getCountryCode() async {
+    try {
+      Placemark place = await _getPlacemark();
+      return place.isoCountryCode;
+    } catch (e) {
+      return null;
     }
   }
 }

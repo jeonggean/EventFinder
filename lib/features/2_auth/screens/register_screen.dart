@@ -1,3 +1,4 @@
+import 'package:eventfinder/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../controllers/auth_controller.dart';
@@ -11,39 +12,84 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  late final AuthController _controller;
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+  final AuthController _controller = AuthController();
+
+  String? _localError;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void initState() {
     super.initState();
-    _controller = AuthController();
     _controller.addListener(() {
-      setState(() {});
+      if (mounted) setState(() {});
     });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   Future<void> _register() async {
-    bool success = await _controller.register(
-      _usernameController.text,
-      _passwordController.text,
-    );
+    final String username = _usernameController.text.trim();
+    final String password = _passwordController.text.trim();
+    final String confirmPassword = _confirmPasswordController.text.trim();
+
+    _controller.errorMessage = "";
+    setState(() {
+      _localError = null;
+    });
+
+    if (username.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      setState(() {
+        _localError = "Semua field harus diisi.";
+      });
+      return;
+    }
+
+    if (username.length < 4) {
+      setState(() {
+        _localError = "Username minimal 4 karakter.";
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      setState(() {
+        _localError = "Password minimal 6 karakter.";
+      });
+      return;
+    }
+
+    if (password != confirmPassword) {
+      setState(() {
+        _localError = "Konfirmasi password tidak cocok.";
+      });
+      return;
+    }
+
+    final bool success = await _controller.register(username, password);
+
     if (success && mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              LoginScreen(initialMessage: _controller.errorMessage),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registrasi berhasil! Silakan login.'),
+          backgroundColor: Colors.green,
         ),
+      );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+        (Route<dynamic> route) => false,
       );
     }
   }
@@ -51,110 +97,177 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.kBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          "Buat Akun Baru",
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.kBackgroundColor,
         elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: AppColors.kTextColor),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32.0),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Icon(
+                  Icons.event_note_outlined,
+                  size: 80,
+                  color: AppColors.kPrimaryColor,
+                ),
+                const SizedBox(height: 24),
                 Text(
-                  'Selamat Datang!',
+                  'Buat Akun',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.nunito(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
+                    color: AppColors.kTextColor,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Isi data untuk mendaftar',
+                  'Mulai perjalanan event-mu!',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    color: Theme.of(context).iconTheme.color,
+                    fontSize: 18,
+                    color: AppColors.kSecondaryTextColor,
                   ),
                 ),
-                const SizedBox(height: 48),
-                TextField(
+                const SizedBox(height: 40),
+                _buildTextField(
                   controller: _usernameController,
-                  decoration: InputDecoration(
-                    labelText: 'Username',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: Icon(Icons.person),
-                  ),
+                  label: 'Username',
+                  icon: Icons.person_outline,
                 ),
-                const SizedBox(height: 16),
-                TextField(
+                const SizedBox(height: 20),
+                _buildTextField(
                   controller: _passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: Icon(Icons.lock),
-                  ),
+                  label: 'Password',
+                  icon: Icons.lock_outline,
+                  isPassword: true,
+                  obscureState: _obscurePassword,
+                  onToggleObscure: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
+                const SizedBox(height: 20),
+                _buildTextField(
+                  controller: _confirmPasswordController,
+                  label: 'Konfirmasi Password',
+                  icon: Icons.lock_outline,
+                  isPassword: true,
+                  obscureState: _obscureConfirmPassword,
+                  onToggleObscure: () {
+                    setState(() {
+                      _obscureConfirmPassword = !_obscureConfirmPassword;
+                    });
+                  },
                 ),
                 const SizedBox(height: 24),
-                if (_controller.isLoading)
-                  const Center(child: CircularProgressIndicator())
-                else
-                  ElevatedButton(
-                    onPressed: _register,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      'Register',
-                      style: GoogleFonts.nunito(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 12),
-                if (!_controller.isLoading)
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: Text(
-                      'Sudah punya akun? Login',
-                      style: GoogleFonts.nunito(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                if (_localError != null)
+                  Text(
+                    _localError!,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.nunito(
+                      color: Colors.redAccent,
+                      fontSize: 15,
                     ),
                   ),
                 if (_controller.errorMessage.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16.0),
-                    child: Text(
-                      _controller.errorMessage,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  Text(
+                    _controller.errorMessage,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.nunito(
+                      color: Colors.redAccent,
+                      fontSize: 15,
                     ),
                   ),
+                const SizedBox(height: 16),
+                _controller.isLoading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                            color: AppColors.kPrimaryColor))
+                    : ElevatedButton(
+                        onPressed: _register,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: Text('Daftar'),
+                      ),
+                const SizedBox(height: 40),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Sudah punya akun?',
+                      style: GoogleFonts.nunito(
+                          fontSize: 16, color: AppColors.kSecondaryTextColor),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        'Login',
+                        style: GoogleFonts.nunito(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.kPrimaryColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isPassword = false,
+    bool obscureState = false,
+    VoidCallback? onToggleObscure,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: isPassword ? obscureState : false,
+      style: TextStyle(color: AppColors.kTextColor),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: AppColors.kSecondaryTextColor),
+        prefixIcon: Icon(icon, color: AppColors.kSecondaryTextColor),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  obscureState ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  color: AppColors.kSecondaryTextColor,
+                ),
+                onPressed: onToggleObscure,
+              )
+            : null,
+        filled: true,
+        fillColor: AppColors.kCardColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide(color: AppColors.kPrimaryColor, width: 2.0),
         ),
       ),
     );

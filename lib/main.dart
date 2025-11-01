@@ -1,7 +1,7 @@
 import 'package:eventfinder/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:timezone/data/latest.dart' as tz; 
+import 'package:timezone/data/latest.dart' as tz;
 import 'core/services/database_service.dart';
 import 'features/0_navigation/main_navigation_screen.dart';
 import 'features/2_auth/services/auth_service.dart';
@@ -11,7 +11,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     await DatabaseService.instance.database;
     await NotificationService.initNotifications();
@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Event Finder (MVC)',
+      title: 'Event Finder',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.light().copyWith(
         scaffoldBackgroundColor: AppColors.kBackgroundColor,
@@ -54,20 +54,22 @@ class MyApp extends StatelessWidget {
         ),
         textTheme: GoogleFonts.nunitoTextTheme(ThemeData.light().textTheme)
             .apply(
-          bodyColor: AppColors.kTextColor,
-          displayColor: AppColors.kTextColor,
-        ),
+              bodyColor: AppColors.kTextColor,
+              displayColor: AppColors.kTextColor,
+            ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.kPrimaryColor,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              textStyle: GoogleFonts.nunito(
-                  fontWeight: FontWeight.bold, fontSize: 16)),
+            backgroundColor: AppColors.kPrimaryColor,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            textStyle: GoogleFonts.nunito(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
         ),
         cardTheme: CardThemeData(
           clipBehavior: Clip.antiAlias,
@@ -120,9 +122,9 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: Center(
-            child: CircularProgressIndicator(
-      color: AppColors.kPrimaryColor,
-    )));
+      body: Center(
+        child: CircularProgressIndicator(color: AppColors.kPrimaryColor),
+      ),
+    );
   }
 }

@@ -6,6 +6,7 @@ import '../../../core/services/database_service.dart';
 class AuthService {
   static const String _sessionUserIdKey = 'currentUserId';
   static const String _sessionUsernameKey = 'currentUsername';
+  static const String _sessionPointsKey = 'currentUserPoints';
 
   Future<Database> get _db async => await DatabaseService.instance.database;
 
@@ -17,7 +18,11 @@ class AuthService {
     try {
       await db.insert(
         'users',
-        {'username': username, 'hashedPassword': hashedPassword},
+        {
+          'username': username,
+          'hashedPassword': hashedPassword,
+          'points': 0
+        },
         conflictAlgorithm: ConflictAlgorithm.fail,
       );
       return true;
@@ -49,6 +54,7 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_sessionUserIdKey, user['id']);
       await prefs.setString(_sessionUsernameKey, user['username']);
+      await prefs.setInt(_sessionPointsKey, user['points']);
       return true;
     } else {
       throw Exception('Password salah.');
@@ -59,6 +65,7 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_sessionUserIdKey);
     await prefs.remove(_sessionUsernameKey);
+    await prefs.remove(_sessionPointsKey);
   }
 
   Future<bool> isLoggedIn() async {
@@ -66,15 +73,23 @@ class AuthService {
     return prefs.containsKey(_sessionUserIdKey);
   }
 
-  // Dipake di ProfileScreen
   Future<String?> getCurrentUsername() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_sessionUsernameKey);
   }
 
-  // Dipake di FavoritesService
   Future<int?> getCurrentUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_sessionUserIdKey);
+  }
+
+  Future<int> getCurrentUserPoints() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_sessionPointsKey) ?? 0;
+  }
+
+  Future<void> setCurrentUserPoints(int newPoints) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_sessionPointsKey, newPoints);
   }
 }

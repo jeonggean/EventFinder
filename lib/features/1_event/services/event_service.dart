@@ -11,6 +11,7 @@ class EventService {
     String? latLong,
     String? countryCode,
     String? keyword,
+    String? radius,
   }) async {
     Map<String, dynamic> params = {
       'apikey': _apiKey,
@@ -25,7 +26,7 @@ class EventService {
 
     if (latLong != null) {
       params['latlong'] = latLong;
-      params['radius'] = '5000';
+      params['radius'] = radius ?? '100';
       params['unit'] = 'km';
     }
 

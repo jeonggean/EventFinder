@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/services/location_service.dart';
+import '../../2_auth/services/auth_service.dart';
 import '../controllers/event_controller.dart';
 import '../models/event_model.dart';
 import 'event_detail_screen.dart';
@@ -21,8 +22,11 @@ class _EventListScreenState extends State<EventListScreen>
   late TabController _tabController;
 
   final LocationService _locationService = LocationService();
+  final AuthService _authService = AuthService();
+
   String? _currentLocationName;
   bool _isLocationLoading = true;
+  late Future<String?> _usernameFuture;
 
   @override
   void initState() {
@@ -36,6 +40,7 @@ class _EventListScreenState extends State<EventListScreen>
     _tabController.addListener(_handleTabSelection);
 
     _fetchLocationName();
+    _usernameFuture = _authService.getCurrentUsername();
   }
 
   Future<void> _fetchLocationName() async {
@@ -64,7 +69,7 @@ class _EventListScreenState extends State<EventListScreen>
     if (!_tabController.indexIsChanging) {
       _controller.changeMode(
         _tabController.index == 0
-            ? EventListMode.asean
+            ? EventListMode.regional
             : EventListMode.popular,
       );
     }
@@ -96,9 +101,7 @@ class _EventListScreenState extends State<EventListScreen>
       body: SafeArea(
         child: Column(
           children: [
-            _buildCustomAppBar(),
-            _buildLocationSelector(),
-            _buildSearchBar(),
+            _buildHeader(),
             _buildTabBar(),
             Expanded(
               child: TabBarView(
@@ -115,103 +118,122 @@ class _EventListScreenState extends State<EventListScreen>
     );
   }
 
-  Widget _buildCustomAppBar() {
+  Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      child: Column(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Halo, User!',
-                style: GoogleFonts.nunito(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.kTextColor,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FutureBuilder<String?>(
+                    future: _usernameFuture,
+                    builder: (context, snapshot) {
+                      final username = snapshot.data ?? 'User';
+                      return Text(
+                        'Halo, $username!',
+                        style: GoogleFonts.nunito(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.kTextColor,
+                        ),
+                      );
+                    },
+                  ),
+                  Text(
+                    'Temukan acara favoritmu',
+                    style: GoogleFonts.nunito(
+                      fontSize: 16,
+                      color: AppColors.kSecondaryTextColor,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                'Temukan acara favoritmu',
-                style: GoogleFonts.nunito(
-                  fontSize: 16,
+              CircleAvatar(
+                backgroundColor: Theme.of(context).cardColor,
+                child: Icon(
+                  Icons.notifications_outlined,
                   color: AppColors.kSecondaryTextColor,
                 ),
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLocationSelector() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 0.0),
-      child: Row(
-        children: [
-          Icon(Icons.location_on_outlined,
-              color: AppColors.kSecondaryTextColor, size: 20),
-          const SizedBox(width: 8),
-          _isLocationLoading
-              ? Text(
-                  'Mencari lokasi...',
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.kSecondaryTextColor,
-                  ),
-                )
-              : Text(
-                  _currentLocationName ?? 'Lokasi Tidak Ditemukan',
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.kTextColor,
-                  ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(Icons.location_on_outlined,
+                  color: AppColors.kSecondaryTextColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                "Lokasi Anda: ",
+                style: GoogleFonts.nunito(
+                  fontSize: 16,
+                  color: AppColors.kSecondaryTextColor,
                 ),
-          Icon(Icons.arrow_drop_down,
-              color: AppColors.kSecondaryTextColor, size: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-      child: TextField(
-        controller: _searchController,
-        style: TextStyle(color: AppColors.kTextColor),
-        decoration: InputDecoration(
-          hintText: 'Cari acara...',
-          hintStyle: TextStyle(color: AppColors.kSecondaryTextColor),
-          prefixIcon: Icon(Icons.search, color: AppColors.kSecondaryTextColor),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: Icon(Icons.clear, color: AppColors.kSecondaryTextColor),
-                  onPressed: () {
-                    _searchController.clear();
-                    _controller.searchEvents('');
-                  },
-                )
-              : IconButton(
-                  icon: Icon(Icons.tune, color: AppColors.kSecondaryTextColor),
-                  onPressed: () {},
-                ),
-          filled: true,
-          fillColor: Theme.of(context).cardColor,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15.0),
-            borderSide: BorderSide.none,
+              ),
+              _isLocationLoading
+                  ? Text(
+                      'Mencari...',
+                      style: GoogleFonts.nunito(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.kTextColor,
+                      ),
+                    )
+                  : Flexible(
+                      child: Text(
+                        _currentLocationName ?? 'Tidak Ditemukan',
+                        style: GoogleFonts.nunito(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.kTextColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+            ],
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 16.0),
-        ),
-        onChanged: (value) => setState(() {}),
-        onSubmitted: (String keyword) {
-          _controller.searchEvents(keyword);
-        },
+          const SizedBox(height: 16),
+          TextField(
+            controller: _searchController,
+            style: TextStyle(color: AppColors.kPrimaryColor),
+            decoration: InputDecoration(
+              hintText: 'Cari acara, konser...',
+              hintStyle:
+                  TextStyle(color: AppColors.kPrimaryColor.withOpacity(0.7)),
+              prefixIcon: Icon(Icons.search,
+                  color: AppColors.kPrimaryColor.withOpacity(0.7)),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Icons.clear,
+                          color: AppColors.kPrimaryColor.withOpacity(0.7)),
+                      onPressed: () {
+                        _searchController.clear();
+                        _controller.searchEvents('');
+                      },
+                    )
+                  : IconButton(
+                      icon: Icon(Icons.tune,
+                          color: AppColors.kPrimaryColor.withOpacity(0.7)),
+                      onPressed: () {},
+                    ),
+              filled: true,
+              fillColor: AppColors.kPrimaryColor.withOpacity(0.1),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15.0),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 16.0),
+            ),
+            onChanged: (value) => setState(() {}),
+            onSubmitted: (String keyword) {
+              _controller.searchEvents(keyword);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -228,13 +250,13 @@ class _EventListScreenState extends State<EventListScreen>
         isScrollable: false,
         indicatorSize: TabBarIndicatorSize.tab,
         indicator: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary,
+          color: AppColors.kPrimaryColor,
           borderRadius: BorderRadius.circular(15),
         ),
         dividerColor: Colors.transparent,
         splashBorderRadius: BorderRadius.circular(15),
         tabs: const [
-          Tab(text: 'Di Sekitarmu'),
+          Tab(text: 'Regional (LBS)'),
           Tab(text: 'Populer'),
         ],
       ),
@@ -250,7 +272,10 @@ class _EventListScreenState extends State<EventListScreen>
 
     if (_controller.errorMessage.isNotEmpty && events.isEmpty) {
       String displayError = _controller.errorMessage;
-      if (displayError.contains('Gagal memuat data event')) {
+      if (displayError.contains('lokasi')) {
+        displayError =
+            'Gagal mendapatkan lokasimu. Aktifkan GPS dan izin lokasi.';
+      } else if (displayError.contains('Gagal memuat data event')) {
         displayError =
             'Gagal mengambil data dari server. Cek koneksi internetmu.';
       }
@@ -267,8 +292,8 @@ class _EventListScreenState extends State<EventListScreen>
     }
 
     if (events.isEmpty) {
-      String message = _controller.currentMode == EventListMode.asean
-          ? 'Tidak ada acara ditemukan di ASEAN.'
+      String message = _controller.currentMode == EventListMode.regional
+          ? 'Tidak ada acara ditemukan di sekitarmu (radius 2500km).'
           : 'Tidak ada acara populer ditemukan.';
       if (_searchController.text.isNotEmpty) {
         message =

@@ -1,3 +1,4 @@
+import 'package:eventfinder/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -8,10 +9,7 @@ class AboutScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Tentang Aplikasi',
-          style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
-        ),
+        title: Text('Tentang Aplikasi'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -19,54 +17,65 @@ class AboutScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'EventFinder',
+              'EvenFinder: Event Finder & Rewards',
               style: GoogleFonts.nunito(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
+                color: AppColors.kPrimaryColor,
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              'Aplikasi ini dibuat sebagai bagian dari Tugas Akhir mata kuliah Pemrograman Aplikasi Mobile.',
-              style: GoogleFonts.nunito(fontSize: 16),
+              'Aplikasi ini adalah platform pencari acara (festival, konser, pameran) yang dibuat sebagai Tugas Akhir. '
+              'Aplikasi ini tidak hanya memberi informasi, tapi juga memberi reward kepada pengguna atas partisipasi mereka melalui sistem gamifikasi (Poin & Badge).',
+              style: GoogleFonts.nunito(
+                fontSize: 17,
+                height: 1.5,
+                color: AppColors.kTextColor,
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             Text(
               'Fitur Utama:',
               style: GoogleFonts.nunito(
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
+                color: AppColors.kTextColor,
               ),
             ),
-            const SizedBox(height: 8),
-            _buildFeatureItem(Icons.search, 'Pencarian Event Konser'),
-            _buildFeatureItem(
-              Icons.location_on,
-              'Pencarian Berbasis Lokasi (LBS)',
-            ),
-            _buildFeatureItem(
-              Icons.favorite,
-              'Simpan Event Favorit (Database Hive)',
-            ),
-            _buildFeatureItem(Icons.calculate, 'Konverter Mata Uang'),
-            _buildFeatureItem(Icons.access_time, 'Perbandingan Zona Waktu'),
-            _buildFeatureItem(Icons.login, 'Autentikasi User (Login/Register)'),
-            _buildFeatureItem(Icons.person, 'Halaman Profil'),
-            const SizedBox(height: 24),
-            Text(
-              'Kesan & Pesan:',
-              style: GoogleFonts.nunito(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.kCardColor,
+                borderRadius: BorderRadius.circular(20.0),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '(Tulis kesan dan pesanmu selama mengerjakan project ini di sini...)',
-              style: GoogleFonts.nunito(
-                fontSize: 16,
-                fontStyle: FontStyle.italic,
+              child: Column(
+                children: [
+                  _buildFeatureItem(Icons.login,
+                      'Autentikasi & Sesi Pengguna (Enkripsi Bcrypt)'),
+                  Divider(height: 1, color: Colors.grey.shade300),
+                  _buildFeatureItem(Icons.home_filled,
+                      'Halaman Utama dengan LBS (Regional & Global)'),
+                  Divider(height: 1, color: Colors.grey.shade300),
+                  _buildFeatureItem(
+                      Icons.search, 'Pencarian Acara (API Ticketmaster)'),
+                  Divider(height: 1, color: Colors.grey.shade300),
+                  _buildFeatureItem(
+                      Icons.favorite, 'Database Favorit (SQLite)'),
+                  Divider(height: 1, color: Colors.grey.shade300),
+                  _buildFeatureItem(Icons.currency_exchange,
+                      'Konverter Mata Uang (Multi-Currency)'),
+                  Divider(height: 1, color: Colors.grey.shade300),
+                  _buildFeatureItem(
+                      Icons.access_time, 'Konverter Zona Waktu (Multi-Zone)'),
+                  Divider(height: 1, color: Colors.grey.shade300),
+                  _buildFeatureItem(
+                      Icons.notifications, 'Notifikasi (Jadwal & Favorit)'),
+                  Divider(height: 1, color: Colors.grey.shade300),
+                  _buildFeatureItem(Icons.military_tech,
+                      'Gamifikasi (Poin, Badge & Redeem Code)'),
+                ],
               ),
             ),
           ],
@@ -77,12 +86,29 @@ class AboutScreen extends StatelessWidget {
 
   Widget _buildFeatureItem(IconData icon, String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 20, color: Colors.grey[600]),
-          const SizedBox(width: 12),
-          Expanded(child: Text(text, style: GoogleFonts.nunito(fontSize: 16))),
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              color: AppColors.kPrimaryColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 22, color: AppColors.kPrimaryColor),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.nunito(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: AppColors.kTextColor,
+              ),
+            ),
+          ),
         ],
       ),
     );

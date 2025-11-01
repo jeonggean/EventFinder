@@ -3,30 +3,34 @@ import '../models/event_model.dart';
 import '../services/event_service.dart';
 import '../../../core/services/location_service.dart';
 
-enum EventListMode { asean, popular }
+enum EventListMode { regional, popular }
 
 class EventController extends ChangeNotifier {
   final EventService _eventService = EventService();
+  final LocationService _locationService = LocationService();
 
-  List<EventModel> _aseanEvents = [];
+  List<EventModel> _regionalEvents = [];
   List<EventModel> _popularEventsGlobal = [];
-  bool _isLoadingAsean = true;
+  bool _isLoadingRegional = true;
   bool _isLoadingPopular = false;
   String _errorMessage = '';
-  EventListMode _currentMode = EventListMode.asean;
+  String? _currentLatLong;
+  EventListMode _currentMode = EventListMode.regional;
   bool _hasTriedLoadingPopular = false;
   bool _disposed = false;
 
   List<EventModel> get eventsToShow =>
-      _currentMode == EventListMode.asean ? _aseanEvents : _popularEventsGlobal;
-  bool get isLoading => _currentMode == EventListMode.asean
-      ? _isLoadingAsean
+      _currentMode == EventListMode.regional
+          ? _regionalEvents
+          : _popularEventsGlobal;
+  bool get isLoading => _currentMode == EventListMode.regional
+      ? _isLoadingRegional
       : _isLoadingPopular;
   String get errorMessage => _errorMessage;
   EventListMode get currentMode => _currentMode;
 
   EventController() {
-    loadAseanEvents();
+    loadRegionalEvents();
   }
 
   @override
@@ -41,25 +45,52 @@ class EventController extends ChangeNotifier {
     }
   }
 
-  Future<void> loadAseanEvents({String? keyword}) async {
-    _isLoadingAsean = true;
+  Future<void> _getInitialLocation() async {
+    if (_currentLatLong == null) {
+      try {
+        _currentLatLong = await _locationService.getCurrentLocation();
+        if (_disposed) return;
+        _errorMessage = '';
+        _safeNotifyListeners();
+      } catch (e) {
+        if (_disposed) return;
+        _errorMessage = e.toString().replaceAll("Exception: ", "");
+        _currentLatLong = null;
+        _safeNotifyListeners();
+      }
+    }
+  }
+
+  Future<void> loadRegionalEvents({String? keyword}) async {
+    _isLoadingRegional = true;
     if (keyword == null) _errorMessage = '';
     _safeNotifyListeners();
 
+    await _getInitialLocation();
+    if (_disposed) return;
+
+    if (_currentLatLong == null) {
+      _regionalEvents = [];
+      _isLoadingRegional = false;
+      _safeNotifyListeners();
+      return;
+    }
+
     try {
-      _aseanEvents = await _eventService.fetchEvents(
-        countryCode: "ID,SG,MY,TH,PH,VN",
+      _regionalEvents = await _eventService.fetchEvents(
+        latLong: _currentLatLong,
+        radius: "2500",
         keyword: keyword,
       );
       if (_disposed) return;
-      _errorMessage = '';
+      if (_errorMessage.contains('lokasi')) _errorMessage = '';
     } catch (e) {
       if (_disposed) return;
       _errorMessage = e.toString().replaceAll("Exception: ", "");
-      _aseanEvents = [];
+      _regionalEvents = [];
     }
 
-    _isLoadingAsean = false;
+    _isLoadingRegional = false;
     _safeNotifyListeners();
   }
 
@@ -88,8 +119,8 @@ class EventController extends ChangeNotifier {
   }
 
   Future<void> searchEvents(String keyword) async {
-    if (_currentMode == EventListMode.asean) {
-      await loadAseanEvents(keyword: keyword);
+    if (_currentMode == EventListMode.regional) {
+      await loadRegionalEvents(keyword: keyword);
     } else {
       await loadPopularGlobalEvents(keyword: keyword);
     }
@@ -98,7 +129,10 @@ class EventController extends ChangeNotifier {
   void changeMode(EventListMode newMode) {
     if (_currentMode != newMode) {
       _currentMode = newMode;
-      _errorMessage = '';
+      if (!(_currentMode == EventListMode.regional &&
+          _errorMessage.contains('lokasi'))) {
+        _errorMessage = '';
+      }
       if (newMode == EventListMode.popular && !_hasTriedLoadingPopular) {
         loadPopularGlobalEvents();
       } else {

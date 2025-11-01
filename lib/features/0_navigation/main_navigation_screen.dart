@@ -30,9 +30,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       case 0:
         return EventListScreen();
       case 1:
-        // INI ADALAH "HACK"
-        // Kita beri key unik agar FavoritesScreen dibuat ulang
-        // setiap kali tab-nya diklik.
         return FavoritesScreen(
           key: ValueKey('favorites_${DateTime.now().millisecondsSinceEpoch}'),
         );
@@ -84,8 +81,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.bookmark_border_outlined),
-              activeIcon: Icon(Icons.bookmark),
+              icon: Icon(Icons.favorite_border_outlined),
+              activeIcon: Icon(Icons.favorite),
               label: 'Favorites',
             ),
             BottomNavigationBarItem(
